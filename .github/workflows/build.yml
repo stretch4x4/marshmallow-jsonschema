@@ -1,3 +1,4 @@
+---
 name: Test Coverage
 
 on: ["push", "pull_request"]
@@ -12,18 +13,18 @@ jobs:
         #
         # Please bump to the latest unreleased candidate
         # when you come across this and have a moment to spare!
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
     steps:
-    - uses: actions/checkout@master
-    - name: set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -U tox tox-gh-actions
-        pip install -r requirements-tox.txt -r requirements-test.txt
-    - name: Run tox
-      run: |
-        tox -e py
+      - uses: actions/checkout@master
+      - name: set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -U tox tox-gh-actions
+          pip install -r requirements-tox.txt -r requirements-test.txt
+      - name: Run tox
+        run: |
+          tox -e py
