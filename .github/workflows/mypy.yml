@@ -1,3 +1,4 @@
+---
 name: Lint
 
 on:
@@ -10,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.11.2
+          python-version: '3.11'
           architecture: x64
       - name: Checkout
         uses: actions/checkout@v1
