@@ -13,8 +13,7 @@ from marshmallow.utils import _Missing
 from marshmallow import INCLUDE, EXCLUDE, RAISE
 
 try:
-    from marshmallow_union import Union
-
+    from marshmallow_dataclass.union_field import Union
     ALLOW_UNIONS = True
 except ImportError:
     ALLOW_UNIONS = False
@@ -241,12 +240,12 @@ class JSONSchema(Schema):
         self, obj, field
     ) -> typing.Dict[str, typing.List[typing.Any]]:
         """Get a union type schema. Uses anyOf to allow the value to be any of the provided sub fields"""
-        assert ALLOW_UNIONS and isinstance(field, Union)
+        assert isinstance(field, Union)
 
         return {
             "anyOf": [
                 self._get_schema_for_field(obj, sub_field)
-                for sub_field in field._candidate_fields
+                for _, sub_field in field.union_fields
             ]
         }
 
@@ -268,7 +267,7 @@ class JSONSchema(Schema):
             if isinstance(field, fields.Nested):
                 # Special treatment for nested fields.
                 schema = self._from_nested_schema(obj, field)
-            elif ALLOW_UNIONS and isinstance(field, Union):
+            elif isinstance(field, Union):
                 schema = self._from_union_schema(obj, field)
             else:
                 pytype = self._get_python_type(field)

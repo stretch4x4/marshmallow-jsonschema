@@ -3,7 +3,7 @@ import marshmallow_jsonschema
 
 
 def test_import_marshmallow_union(monkeypatch):
-    monkeypatch.delattr("marshmallow_union.Union")
+    monkeypatch.delattr("marshmallow_dataclass.union_field.Union")
 
     base = importlib.reload(marshmallow_jsonschema.base)
 
