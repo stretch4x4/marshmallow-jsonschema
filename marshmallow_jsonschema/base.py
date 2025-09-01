@@ -14,6 +14,7 @@ from marshmallow import INCLUDE, EXCLUDE, RAISE
 
 try:
     from marshmallow_dataclass.union_field import Union
+
     ALLOW_UNIONS = True
 except ImportError:
     ALLOW_UNIONS = False

@@ -698,7 +698,11 @@ def test_union_based():
 
     class TestSchema(Schema):
         union_prop = Union(
-            [(str, fields.String()), (int, fields.Integer()), (TestNestedSchema, fields.Nested(TestNestedSchema))]
+            [
+                (str, fields.String()),
+                (int, fields.Integer()),
+                (TestNestedSchema, fields.Nested(TestNestedSchema)),
+            ]
         )
 
     # Should be sorting of fields
@@ -773,37 +777,67 @@ def test_dumping_recursive_schema():
     name_schema = generate_recursive_schema_with_name()
     assert lambda_schema == name_schema
 
+
 def test_dataclass():
-    expected_data = {'$schema': 'http://json-schema.org/draft-07/schema#',
-                       'definitions': {'TestDataClass': {'properties': {
-                           'field_1': {'title': 'field_1', 'type': 'integer'},
-                           'field_2': {'title': 'field_2', 'type': 'string'},
-                           'field_3': {'title': 'field_3', 'type': 'array', 'items': {'title': 'field_3', 'type': 'string'}}
-                        },
-                        'type': 'object',
-                        'required': ['field_1', 'field_2', 'field_3'],
-                        'additionalProperties': False}
-                        }, '$ref': '#/definitions/TestDataClass'}
+    expected_data = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "definitions": {
+            "TestDataClass": {
+                "properties": {
+                    "field_1": {"title": "field_1", "type": "integer"},
+                    "field_2": {"title": "field_2", "type": "string"},
+                    "field_3": {
+                        "title": "field_3",
+                        "type": "array",
+                        "items": {"title": "field_3", "type": "string"},
+                    },
+                },
+                "type": "object",
+                "required": ["field_1", "field_2", "field_3"],
+                "additionalProperties": False,
+            }
+        },
+        "$ref": "#/definitions/TestDataClass",
+    }
     json_schema = JSONSchema()
+
     @dataclass
     class TestDataClass:
         field_1: int
         field_2: str
         field_3: list[str]
+
     marshmallow_dataclass = class_schema(TestDataClass)()
 
     data = json_schema.dump(marshmallow_dataclass)
     assert data == expected_data
 
+
 def test_union_dataclass():
-    expected_data = {'$schema': 'http://json-schema.org/draft-07/schema#',
-                          'definitions': {'TestDataClass': {
-                              'properties': {'field_1': {'anyOf': [{'title': 'field_1', 'type': 'integer'}, {'title': 'field_1', 'type': 'string'}]}},
-                              'type': 'object', 'additionalProperties': False}}, '$ref': '#/definitions/TestDataClass'}
+    expected_data = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "definitions": {
+            "TestDataClass": {
+                "properties": {
+                    "field_1": {
+                        "anyOf": [
+                            {"title": "field_1", "type": "integer"},
+                            {"title": "field_1", "type": "string"},
+                        ]
+                    }
+                },
+                "type": "object",
+                "additionalProperties": False,
+            }
+        },
+        "$ref": "#/definitions/TestDataClass",
+    }
     json_schema = JSONSchema()
+
     @dataclass
     class TestDataClass:
         field_1: int | str | None
+
     marshmallow_dataclass = class_schema(TestDataClass)()
     data = json_schema.dump(marshmallow_dataclass)
     assert data == expected_data
