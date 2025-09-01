@@ -22,6 +22,11 @@ var/
 wheels/
 share/python-wheels/
 *.egg-info/
+# JetBrains IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
 .installed.cfg
 *.egg
 MANIFEST
