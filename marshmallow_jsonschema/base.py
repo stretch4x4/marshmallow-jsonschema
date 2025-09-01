@@ -250,8 +250,14 @@ class JSONSchema(Schema):
             )
 
         return [value.name for value in field.enum]
+
     def _get_marshmallow_native_enum_values(self, field) -> typing.List[str]:
-        assert ALLOW_MARSHMALLOW_NATIVE_ENUMS and isinstance(field, MarshmallowNativeEnumField)
+        """
+        Extract the names of enum members from a Marshmallow native EnumField. Only supports fields configured with ``by_name``
+        """
+
+        if ALLOW_MARSHMALLOW_NATIVE_ENUMS and isinstance(field, MarshmallowNativeEnumField):
+            raise TypeError("Expected a MarshmallowNativeEnumField with native enums enabled")
 
         if field.by_value:
             # Python allows enum values to be almost anything, so it's easier to just load from the
