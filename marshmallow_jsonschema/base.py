@@ -250,7 +250,7 @@ class JSONSchema(Schema):
             field, MarshmallowEnumEnumField
         ):
             raise TypeError(
-                "Expected a MarshmallowEnumEnumField with native enums enabled"
+                "Expected a MarshmallowEnumEnumField with enum enums enabled"
             )
 
         if field.load_by == LoadDumpOptions.value:
