@@ -10,9 +10,11 @@ from marshmallow.class_registry import get_class
 from marshmallow.decorators import post_dump
 from marshmallow.utils import _Missing
 from marshmallow import INCLUDE, EXCLUDE, RAISE
+
 # marshmallow.fields.Enum support has been added in marshmallow v3.18
 # see https://github.com/marshmallow-code/marshmallow/blob/dev/CHANGELOG.rst#3180-2022-09-15
 from marshmallow import __version__ as _MarshmallowVersion
+
 # the package "packaging" is a requirement of marshmallow itself => we don't need to install it separately
 # see https://github.com/marshmallow-code/marshmallow/blob/ddbe06f923befe754e213e03fb95be54e996403d/setup.py#L61
 from packaging.version import Version
@@ -210,9 +212,13 @@ class JSONSchema(Schema):
         if field.default is not missing and not callable(field.default):
             json_schema["default"] = field.default
 
-        if ALLOW_MARSHMALLOW_NATIVE_ENUMS and isinstance(field, MarshmallowNativeEnumField):
+        if ALLOW_MARSHMALLOW_NATIVE_ENUMS and isinstance(
+            field, MarshmallowNativeEnumField
+        ):
             json_schema["enum"] = self._get_marshmallow_native_enum_values(field)
-        elif ALLOW_MARSHMALLOW_ENUM_ENUMS and isinstance(field, MarshmallowEnumEnumField):
+        elif ALLOW_MARSHMALLOW_ENUM_ENUMS and isinstance(
+            field, MarshmallowEnumEnumField
+        ):
             json_schema["enum"] = self._get_marshmallow_enum_enum_values(field)
 
         if field.allow_none:
@@ -240,7 +246,9 @@ class JSONSchema(Schema):
         return json_schema
 
     def _get_marshmallow_enum_enum_values(self, field) -> typing.List[str]:
-        assert ALLOW_MARSHMALLOW_ENUM_ENUMS and isinstance(field, MarshmallowEnumEnumField)
+        assert ALLOW_MARSHMALLOW_ENUM_ENUMS and isinstance(
+            field, MarshmallowEnumEnumField
+        )
 
         if field.load_by == LoadDumpOptions.value:
             # Python allows enum values to be almost anything, so it's easier to just load from the
@@ -256,8 +264,12 @@ class JSONSchema(Schema):
         Extract the names of enum members from a Marshmallow native EnumField. Only supports fields configured with ``by_name``
         """
 
-        if ALLOW_MARSHMALLOW_NATIVE_ENUMS and isinstance(field, MarshmallowNativeEnumField):
-            raise TypeError("Expected a MarshmallowNativeEnumField with native enums enabled")
+        if not ALLOW_MARSHMALLOW_NATIVE_ENUMS and not isinstance(
+            field, MarshmallowNativeEnumField
+        ):
+            raise TypeError(
+                "Expected a MarshmallowNativeEnumField with native enums enabled"
+            )
 
         if field.by_value:
             # Python allows enum values to be almost anything, so it's easier to just load from the
