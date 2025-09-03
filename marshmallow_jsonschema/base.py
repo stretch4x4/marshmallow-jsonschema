@@ -241,7 +241,8 @@ class JSONSchema(Schema):
         self, obj, field
     ) -> typing.Dict[str, typing.List[typing.Any]]:
         """Get a union type schema. Uses anyOf to allow the value to be any of the provided sub fields"""
-        assert isinstance(field, Union)
+        if not isinstance(field, Union):
+            raise TypeError(f"Field {field} is not of type Union.")
 
         return {
             "anyOf": [

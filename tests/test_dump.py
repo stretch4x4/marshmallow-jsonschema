@@ -779,6 +779,9 @@ def test_dumping_recursive_schema():
 
 
 def test_dataclass():
+    """
+    Tests whether a dataclass (using @dataclass) can be transformed into a jsonschema using marshmallow-dataclass and JSONSchema.dump()
+    """
     expected_data = {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "definitions": {
@@ -814,6 +817,9 @@ def test_dataclass():
 
 
 def test_union_dataclass():
+    """
+    Tests whether a dataclass with a variable with a union type (e.g. int | str) translates well through JSONSchema.dump()
+    """
     expected_data = {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "definitions": {
