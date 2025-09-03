@@ -246,9 +246,12 @@ class JSONSchema(Schema):
         return json_schema
 
     def _get_marshmallow_enum_enum_values(self, field) -> typing.List[str]:
-        assert ALLOW_MARSHMALLOW_ENUM_ENUMS and isinstance(
+        if not ALLOW_MARSHMALLOW_ENUM_ENUMS and not isinstance(
             field, MarshmallowEnumEnumField
-        )
+        ):
+            raise TypeError(
+                "Expected a MarshmallowEnumEnumField with native enums enabled"
+            )
 
         if field.load_by == LoadDumpOptions.value:
             # Python allows enum values to be almost anything, so it's easier to just load from the
