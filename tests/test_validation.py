@@ -4,7 +4,7 @@ import pytest
 from marshmallow import Schema, fields, validate
 from marshmallow.validate import OneOf, Range
 from marshmallow_enum import EnumField
-from marshmallow_dataclass.union_field import Union
+from marshmallow_union import Union
 
 from marshmallow_jsonschema import JSONSchema, UnsupportedValueError
 from . import UserSchema, validate_and_dump
@@ -189,13 +189,15 @@ def test_enum():
 
 
 def test_union():
+    """
+    Tests whether JSONSchemas can be created using the Union type in marshmallow_union.
+    """
     class TestSchema(Schema):
-        foo = Union([(str, fields.String()), (int, fields.Integer())])
+        foo = Union([fields.String(), fields.Integer()])
 
     schema = TestSchema()
-
     dumped = validate_and_dump(schema)
 
     foo_property = dumped["definitions"]["TestSchema"]["properties"]["foo"]
-    assert {"title": "foo", "type": "string"} in foo_property["anyOf"]
-    assert {"title": "foo", "type": "integer"} in foo_property["anyOf"]
+    assert {"title": "", "type": "string"} in foo_property["anyOf"]
+    assert {"title": "", "type": "integer"} in foo_property["anyOf"]

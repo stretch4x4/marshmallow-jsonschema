@@ -4,7 +4,7 @@ from enum import Enum
 import pytest
 from marshmallow import Schema, fields, validate
 from marshmallow_enum import EnumField
-from marshmallow_dataclass.union_field import Union
+from marshmallow_union import Union
 from dataclasses import dataclass
 from marshmallow_dataclass import class_schema
 from marshmallow_jsonschema import JSONSchema, UnsupportedValueError
@@ -698,11 +698,7 @@ def test_union_based():
 
     class TestSchema(Schema):
         union_prop = Union(
-            [
-                (str, fields.String()),
-                (int, fields.Integer()),
-                (TestNestedSchema, fields.Nested(TestNestedSchema)),
-            ]
+            [fields.String(), fields.Integer(), fields.Nested(TestNestedSchema)]
         )
 
     # Should be sorting of fields
@@ -715,8 +711,8 @@ def test_union_based():
     assert "anyOf" in data["definitions"]["TestSchema"]["properties"]["union_prop"]
     assert len(data["definitions"]["TestSchema"]["properties"]["union_prop"]) == 1
 
-    string_schema = {"type": "string", "title": "union_prop"}
-    integer_schema = {"type": "integer", "title": "union_prop"}
+    string_schema = {"type": "string", "title": ""}
+    integer_schema = {"type": "string", "title": ""}
     referenced_nested_schema = {
         "type": "object",
         "$ref": "#/definitions/TestNestedSchema",
@@ -744,7 +740,6 @@ def test_union_based():
     )
 
     assert data["definitions"]["TestNestedSchema"] == actual_nested_schema
-
     # Expect three possible schemas for the union type
     assert (
         len(data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]) == 3
@@ -778,7 +773,7 @@ def test_dumping_recursive_schema():
     assert lambda_schema == name_schema
 
 
-def test_dataclass():
+def test_basic_dataclass():
     """
     Tests whether a dataclass (using @dataclass) can be transformed into a jsonschema using marshmallow-dataclass and JSONSchema.dump()
     """
@@ -847,3 +842,29 @@ def test_union_dataclass():
     marshmallow_dataclass = class_schema(TestDataClass)()
     data = json_schema.dump(marshmallow_dataclass)
     assert data == expected_data
+
+def test_nested_dataclass():
+    """
+    Tests whether a dataclass with an internally defined dataclass translates well through JSONSchema.dump(), meaning
+    both dataclasses should come out the other side.
+    """
+    @dataclass
+    class SubDataClass:
+        foo: int
+        bar: list[int | str]
+
+    @dataclass
+    class TestDataClass:
+        subclass: SubDataClass
+        other: str
+
+    marshmallow_dataclass = class_schema(TestDataClass)()
+    data = JSONSchema().dump(marshmallow_dataclass)
+
+    assert data['definitions']['SubDataClass']['type'] == 'object'
+    assert data['definitions']['SubDataClass']['properties']['bar']['items'] == {'anyOf': [{'title': 'bar', 'type': 'integer'}, {'title': 'bar', 'type': 'string'}]}
+    assert data['definitions']['SubDataClass']['properties']['foo'] == {'title': 'foo', 'type': 'integer'}
+    assert data['definitions']['TestDataClass']['type'] == 'object'
+    assert data['definitions']['TestDataClass']['properties']['other'] == {'title': 'other', 'type': 'string'}
+    assert data['definitions']['TestDataClass']['properties']['subclass'] == {'type': 'object', '$ref': '#/definitions/SubDataClass'}
+    assert data['definitions']['TestDataClass']['required'] == ['other', 'subclass']

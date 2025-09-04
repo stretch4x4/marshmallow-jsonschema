@@ -29,6 +29,7 @@ REQUIREMENTS_TOX = open(os.path.join(PROJECT_DIR, REQUIREMENTS_TOX_FILE)).readli
 EXTRAS_REQUIRE = {
     "enum": ["marshmallow-enum"],
     "union": ["marshmallow-union"],
+    "dataclass": ["marshmallow-dataclass"]
 }
 
 

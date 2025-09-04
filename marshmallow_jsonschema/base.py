@@ -13,13 +13,6 @@ from marshmallow.utils import _Missing
 from marshmallow import INCLUDE, EXCLUDE, RAISE
 
 try:
-    from marshmallow_dataclass.union_field import Union
-
-    ALLOW_UNIONS = True
-except ImportError:
-    ALLOW_UNIONS = False
-
-try:
     from marshmallow_enum import EnumField, LoadDumpOptions
 
     ALLOW_ENUMS = True
@@ -240,16 +233,33 @@ class JSONSchema(Schema):
     def _from_union_schema(
         self, obj, field
     ) -> typing.Dict[str, typing.List[typing.Any]]:
-        """Get a union type schema. Uses anyOf to allow the value to be any of the provided sub fields"""
-        if not isinstance(field, Union):
-            raise TypeError(f"Field {field} is not of type Union.")
+        """
+        Get a union type schema. Uses anyOf to allow the value to be any of the provided sub fields.
+        Currently there are two implementations of union fields, one in marshmallow_dataclass
+        and one in marshmallow_union. To avoid excessive imports, this function just tries to access the relevant attribute
+        instead of type checking for Union.
+        """
+        # If obj has union_fields attribute, probably a marshmallow_dataclass type of Union.
+        # Does some type checking on union_fields to ensure it will not fail due to an access issue.
+        if hasattr(field, "union_fields") and isinstance(field.union_fields, list) and all([isinstance(field_pair, tuple) for field_pair in field.union_fields]):
+            return {
+                "anyOf": [
+                    self._get_schema_for_field(obj, sub_field)
+                    for _, sub_field in field.union_fields
+                ]
+            }
 
-        return {
-            "anyOf": [
-                self._get_schema_for_field(obj, sub_field)
-                for _, sub_field in field.union_fields
-            ]
-        }
+        # If obj has _candidate_fields attribute, probably a marshmallow_union type of Union.
+        if hasattr(field, "_candidate_fields") and isinstance(field._candidate_fields, list):
+            return {
+                "anyOf": [
+                    self._get_schema_for_field(obj, sub_field)
+                    for sub_field in field._candidate_fields
+                ]
+            }
+
+        # If neither of these attributes exists, it is not an implemented union type.
+        raise TypeError(f"Field {field} is not a supported Union type.")
 
     def _get_python_type(self, field):
         """Get python type based on field subclass"""
@@ -269,7 +279,7 @@ class JSONSchema(Schema):
             if isinstance(field, fields.Nested):
                 # Special treatment for nested fields.
                 schema = self._from_nested_schema(obj, field)
-            elif isinstance(field, Union):
+            elif hasattr(field, "union_fields") or hasattr(field, "_candidate_fields"):
                 schema = self._from_union_schema(obj, field)
             else:
                 pytype = self._get_python_type(field)
