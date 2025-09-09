@@ -8,3 +8,4 @@ marshmallow-union
 mypy>=1.1.1
 
 pre-commit~=2.15
+-e.
