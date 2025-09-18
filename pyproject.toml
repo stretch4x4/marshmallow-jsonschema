@@ -56,11 +56,11 @@ target-version = ['py310', 'py311', 'py312', 'py313']
 
 [dependency-groups]
 dev = [
-    "coverage~=6.0",
-    "jsonschema~=4.0",
+    "coverage~=7.10",
+    "jsonschema~=4.25",
     "marshmallow-enum~=1.5",
     "marshmallow-union~=0.1",
-    "pre-commit~=2.15",
-    "pytest~=6.2",
+    "pre-commit~=4.3",
+    "pytest~=8.4",
     "pytest-cov~=7.0",
 ]
