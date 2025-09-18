@@ -9,7 +9,7 @@ description = "Formatting marshmallow schemas as JSON Schema Draft v7 (http://js
 readme = "README.md"
 license = "MIT"
 license-files = ["LICEN[CS]E*", "AUTHORS.md"]
-requires-python = "~=3.10"
+requires-python = ">=3.10"
 authors = [
     { name = "stretch4x4", email = "stretch4x4@users.noreply.github.com" },
     { name = "Stephen Fuhry", email = "fuhrysteve@gmail.com" },
