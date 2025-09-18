@@ -1,5 +1,4 @@
----
-name: Lint
+name: Mypy
 
 on:
   push:
