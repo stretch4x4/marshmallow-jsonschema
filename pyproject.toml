@@ -1,2 +1,66 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "marshmallow-jsonschema"
+version = "0.14.0"
+description = "Formatting marshmallow schemas as JSON Schema Draft v7 (http://json-schema.org/)"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICEN[CS]E*", "AUTHORS.md"]
+requires-python = "~=3.10"
+authors = [
+    { name = "stretch4x4", email = "stretch4x4@users.noreply.github.com" },
+    { name = "Stephen Fuhry", email = "fuhrysteve@gmail.com" },
+]
+keywords = [
+    "jsonschema",
+    "marshmallow",
+    "marshmallow-jsonschema",
+    "schema",
+    "serialization",
+    "validation",
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "marshmallow~=3.11",
+]
+
+[project.optional-dependencies]
+enum = [
+    "marshmallow-enum",
+]
+union = [
+    "marshmallow-union",
+]
+
+[project.urls]
+Homepage = "https://github.com/stretch4x4/marshmallow-jsonschema"
+Documentation = "https://github.com/stretch4x4/marshmallow-jsonschema/blob/master/README.md"
+Repository = "https://github.com/stretch4x4/marshmallow-jsonschema.git"
+Issues = "https://github.com/stretch4x4/marshmallow-jsonschema/issues"
+Changelog = "https://github.com/stretch4x4/marshmallow-jsonschema/blob/master/CHANGES"
+
 [tool.black]
 target-version = ['py310', 'py311', 'py312', 'py313']
+
+[dependency-groups]
+dev = [
+    "coverage~=6.0",
+    "jsonschema~=4.0",
+    "marshmallow-enum~=1.5",
+    "marshmallow-union~=0.1",
+    "pre-commit~=2.15",
+    "pytest~=6.2",
+    "pytest-cov~=7.0",
+]
