@@ -106,6 +106,9 @@ FIELD_VALIDATORS = {
     validate.Regexp: handle_regexp,
 }
 
+# Metadata item to specify what python type to interpret custom field classes as
+PYTYPE_KEY = "pytype"
+
 
 def _resolve_additional_properties(cls) -> bool:
     meta = cls.Meta
@@ -210,17 +213,21 @@ class JSONSchema(Schema):
         metadata.update(field.metadata)
 
         for md_key, md_val in metadata.items():
-            if md_key in ("metadata", "name"):
+            if md_key in ("metadata", "name", PYTYPE_KEY):
                 continue
             json_schema[md_key] = md_val
 
-        if isinstance(field, fields.List):
-            json_schema["items"] = self._get_schema_for_field(obj, field.inner)
+        if pytype in (list, set, tuple):
+            json_schema["items"] = (
+                self._get_schema_for_field(obj, field.inner)
+                if isinstance(field, fields.List)
+                else {}
+            )
 
-        if isinstance(field, fields.Dict):
+        if pytype is dict:
             json_schema["additionalProperties"] = (
                 self._get_schema_for_field(obj, field.value_field)
-                if field.value_field
+                if isinstance(field, fields.Dict) and field.value_field
                 else {}
             )
         return json_schema
@@ -250,20 +257,68 @@ class JSONSchema(Schema):
             ]
         }
 
-    def _get_python_type(self, field):
+    def _get_python_type(self, field: fields.Field) -> typing.Type:
         """Get python type based on field subclass"""
-        for map_class, pytype in MARSHMALLOW_TO_PY_TYPES_PAIRS:
-            if issubclass(field.__class__, map_class):
-                return pytype
+        if PYTYPE_KEY in field.metadata:
+            return field.metadata[PYTYPE_KEY]
+        else:
+            for map_class, pytype in MARSHMALLOW_TO_PY_TYPES_PAIRS:
+                if issubclass(field.__class__, map_class):
+                    return pytype
 
         raise UnsupportedValueError("unsupported field type %s" % field)
 
+    def _from_custom_field_type(self, obj, field: fields.Field, type_mapping: dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
+        """Get schema definition for a custom field."""
+        json_schema = type_mapping
+
+        json_schema["title"] = field.attribute or field.name or ""
+
+        if field.dump_only:
+            json_schema["readOnly"] = True
+
+        if field.default is not missing and not callable(field.default):
+            json_schema["default"] = field.default
+
+        if ALLOW_ENUMS and isinstance(field, EnumField):
+            json_schema["enum"] = self._get_enum_values(field)
+
+        if field.allow_none:
+            previous_type = json_schema["type"]
+            json_schema["type"] = [previous_type, "null"]
+
+        # NOTE: doubled up to maintain backwards compatibility
+        metadata = field.metadata.get("metadata", {})
+        metadata.update(field.metadata)
+
+        for md_key, md_val in metadata.items():
+            if md_key in ("metadata", "name", PYTYPE_KEY):
+                continue
+            json_schema[md_key] = md_val
+
+        if "array" in json_schema["type"]:
+            json_schema["items"] = (
+                self._get_schema_for_field(obj, field.inner)
+                if isinstance(field, fields.List)
+                else {}
+            )
+
+        if "object" in json_schema["type"]:
+            json_schema["additionalProperties"] = (
+                self._get_schema_for_field(obj, field.value_field)
+                if isinstance(field, fields.Dict) and field.value_field
+                else {}
+            )
+        return json_schema
+
     def _get_schema_for_field(self, obj, field):
         """Get schema and validators for field."""
-        if hasattr(field, "_jsonschema_type_mapping"):
-            schema = field._jsonschema_type_mapping()
-        elif "_jsonschema_type_mapping" in field.metadata:
-            schema = field.metadata["_jsonschema_type_mapping"]
+        # For backwards compatibility, can still use _jsonschema_type_mapping with JSON equivalent Field type.
+        # Will just use the pytype metadata mapping if present
+        if hasattr(field, "_jsonschema_type_mapping") and PYTYPE_KEY not in field.metadata:
+            schema = self._from_custom_field_type(obj, field, field._jsonschema_type_mapping())
+        elif "_jsonschema_type_mapping" in field.metadata and PYTYPE_KEY not in field.metadata:
+            schema = self._from_custom_field_type(obj, field, field.metadata["_jsonschema_type_mapping"])
         else:
             if isinstance(field, fields.Nested):
                 # Special treatment for nested fields.
