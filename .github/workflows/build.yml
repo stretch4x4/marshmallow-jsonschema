@@ -21,7 +21,8 @@ jobs:
         version: "0.8.18"
         python-version: ${{ matrix.python-version }}
     - name: Install the project
-      run: uv sync --locked --all-extras --dev
+      run: uv sync --all-extras --dev
+      # run: uv sync --locked --all-extras --dev  # consider using --locked once in the repo
 
     - name: Run tests with coverage
       run: pytest --cov-report html --cov-config .coveragerc --cov marshmallow_jsonschema
