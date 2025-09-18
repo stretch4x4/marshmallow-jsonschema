@@ -25,4 +25,4 @@ jobs:
       # run: uv sync --locked --all-extras --dev  # consider using --locked once in the repo
 
     - name: Run tests with coverage
-      run: pytest --cov-report html --cov-config .coveragerc --cov marshmallow_jsonschema
+      run: uv run pytest --cov-report html --cov-config .coveragerc --cov marshmallow_jsonschema
