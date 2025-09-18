@@ -35,7 +35,8 @@ EXTRAS_REQUIRE = {
 setup(
     name="marshmallow-jsonschema",
     version="0.14.0",
-    description="Formatting marshmallow schemas as JSON Schema Draft v7 (http://json-schema.org/)",
+    description="JSON Schema Draft v7 (http://json-schema.org/)"
+    " formatting with marshmallow",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Stephen Fuhry, stretch4x4",
