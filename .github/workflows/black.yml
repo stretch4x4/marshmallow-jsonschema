@@ -1,5 +1,4 @@
----
-name: Lint
+name: Black
 
 on: [push, pull_request, workflow_dispatch]
 
