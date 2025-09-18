@@ -34,14 +34,14 @@ EXTRAS_REQUIRE = {
 
 setup(
     name="marshmallow-jsonschema",
-    version="0.13.0",
+    version="0.14.0",
     description="JSON Schema Draft v7 (http://json-schema.org/)"
     " formatting with marshmallow",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author="Stephen Fuhry",
-    author_email="fuhrysteve@gmail.com",
-    url="https://github.com/fuhrysteve/marshmallow-jsonschema",
+    author="Stephen Fuhry, stretch4x4",
+    author_email="stretch4x4@users.noreply.github.com",
+    url="https://github.com/stretch4x4/marshmallow-jsonschema",
     packages=find_packages(exclude=("test*",)),
     package_dir={"marshmallow-jsonschema": "marshmallow-jsonschema"},
     include_package_data=True,

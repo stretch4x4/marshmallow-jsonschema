@@ -5,7 +5,7 @@ Setting Up for Local Development
 
 ::
 
-    $ git clone https://github.com/fuhrysteve/marshmallow-jsonschema.git
+    $ git clone https://github.com/stretch4x4/marshmallow-jsonschema.git
     $ cd marshmallow_jsonschema
 
 2. Create a virtual environment and install all dependencies
