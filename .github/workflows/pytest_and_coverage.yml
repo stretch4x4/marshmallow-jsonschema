@@ -27,8 +27,8 @@ jobs:
     - name: Run tests with coverage
       run: >
         uv run pytest
-        --cov-report html:${{ github.workspace }}/coverage_report_html
-        --cov-report xml:${{ github.workspace }}/coverage_report_xml.xml
+        --cov-report html:${{ github.workspace }}/coverage_report_html_${{ matrix.python-version }}
+        --cov-report xml:${{ github.workspace }}/coverage_report_xml_${{ matrix.python-version }}.xml
         --cov-report markdown-append:$GITHUB_STEP_SUMMARY
         --cov-config .coveragerc
         --cov marshmallow_jsonschema
