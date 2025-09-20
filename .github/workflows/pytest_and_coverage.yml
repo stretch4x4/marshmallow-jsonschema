@@ -1,4 +1,4 @@
-name: Test Coverage
+name: PyTest and Coverage
 
 on: ["push", "pull_request", "workflow_dispatch"]
 
@@ -25,4 +25,18 @@ jobs:
       # run: uv sync --locked --all-extras --dev  # consider using --locked once in the repo
 
     - name: Run tests with coverage
-      run: uv run pytest --cov-report html --cov-config .coveragerc --cov marshmallow_jsonschema
+      run: >
+        uv run pytest
+        --cov-report html:coverage_report_html
+        --cov-report xml:coverage_report_xml.xml
+        --cov-report markdown-append:$GITHUB_STEP_SUMMARY
+        --cov-config .coveragerc
+        --cov marshmallow_jsonschema
+    
+    - name: Archive coverage
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage_report_html
+        path: >
+          coverage_report_html
+          coverage_report_xml.xml
