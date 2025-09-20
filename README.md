@@ -14,8 +14,8 @@
 
 ## Overview
 
-![Build Status](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/build.yml/badge.svg)
-![Coverage](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/build.yml/badge.svg)
+![Build Status](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/pytest_and_coverage.yml/badge.svg)
+![Coverage](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/pytest_and_coverage.yml/badge.svg)
 [![Code style: black](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/black.yml/badge.svg)](https://github.com/psf/black)
 [![CodeQL](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/codeql-analysis.yml)
 [![OSSAR](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/ossar-analysis.yml/badge.svg)](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/ossar-analysis.yml)
