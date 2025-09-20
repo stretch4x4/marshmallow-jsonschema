@@ -27,8 +27,8 @@ jobs:
     - name: Run tests with coverage
       run: >
         uv run pytest
-        --cov-report html:coverage_report_html
-        --cov-report xml:coverage_report_xml.xml
+        --cov-report html:${{ github.workspace }}/coverage_report_html
+        --cov-report xml:${{ github.workspace }}/coverage_report_xml.xml
         --cov-report markdown-append:$GITHUB_STEP_SUMMARY
         --cov-config .coveragerc
         --cov marshmallow_jsonschema
@@ -37,6 +37,10 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: coverage_report_html
-        path: >
-          coverage_report_html
-          coverage_report_xml.xml
+        path: ${{ github.workspace }}/coverage_report_html
+
+    - name: Archive coverage
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage_report_xml
+        path: ${{ github.workspace }}/coverage_report_xml.xml
