@@ -177,8 +177,7 @@ class JSONSchema(Schema):
         """Get schema definition from python type."""
         json_schema = {"title": field.attribute or field.name or ""}
 
-        for key, val in PY_TO_JSON_TYPES_MAP[pytype].items():
-            json_schema[key] = val
+        json_schema.update(dict(PY_TO_JSON_TYPES_MAP[pytype]))
 
         if field.dump_only:
             json_schema["readOnly"] = True
