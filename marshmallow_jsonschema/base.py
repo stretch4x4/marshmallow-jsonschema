@@ -122,7 +122,7 @@ def _resolve_additional_properties(cls) -> bool:
     if unknown == INCLUDE:
         return True
     # This is probably unreachable as of marshmallow 3.16.0
-    raise UnsupportedValueError("Unknown value %s for `unknown`" % unknown)
+    raise UnsupportedValueError(f"Unknown value {str(unknown)} for `unknown`")
 
 
 class JSONSchema(Schema):
@@ -140,13 +140,13 @@ class JSONSchema(Schema):
                                    Note: For the marshmallow scheme, also need to enable
                                    ordering of fields too (via `class Meta`, attribute `ordered`).
         """
-        self._nested_schema_classes: typing.Dict[str, typing.Dict[str, typing.Any]] = {}
+        self._nested_schema_classes: dict[str, dict[str, typing.Any]] = {}
         self.nested = kwargs.pop("nested", False)
         self.props_ordered = kwargs.pop("props_ordered", False)
         setattr(self.opts, "ordered", self.props_ordered)
         super().__init__(*args, **kwargs)
 
-    def get_properties(self, obj) -> typing.Dict[str, typing.Dict[str, typing.Any]]:
+    def get_properties(self, obj) -> dict[str, dict[str, typing.Any]]:
         """Fill out properties field."""
         properties = self.dict_class()
 
@@ -163,7 +163,7 @@ class JSONSchema(Schema):
 
         return properties
 
-    def get_required(self, obj) -> typing.Union[typing.List[str], _Missing]:
+    def get_required(self, obj) -> list[str] | _Missing:
         """Fill out required field."""
         required = []
         field_items_iterable = sorted(obj().fields.items()) if callable(obj) else sorted(obj.fields.items())
@@ -173,7 +173,7 @@ class JSONSchema(Schema):
 
         return required or missing
 
-    def _from_python_type(self, obj, field, pytype) -> typing.Dict[str, typing.Any]:
+    def _from_python_type(self, obj, field, pytype) -> dict[str, typing.Any]:
         """Get schema definition from python type."""
         json_schema = {"title": field.attribute or field.name or ""}
 
@@ -211,7 +211,7 @@ class JSONSchema(Schema):
             )
         return json_schema
 
-    def _get_enum_values(self, field) -> typing.List[str]:
+    def _get_enum_values(self, field) -> list[str]:
         assert ALLOW_ENUMS and isinstance(field, EnumField)
 
         if field.load_by == LoadDumpOptions.value:
@@ -221,7 +221,7 @@ class JSONSchema(Schema):
 
         return [value.name for value in field.enum]
 
-    def _from_union_schema(self, obj, field) -> typing.Dict[str, typing.List[typing.Any]]:
+    def _from_union_schema(self, obj, field) -> dict[str, list[typing.Any]]:
         """Get a union type schema. Uses anyOf to allow the value to be any of the provided sub fields"""
         assert ALLOW_UNIONS and isinstance(field, Union)
 
@@ -233,7 +233,7 @@ class JSONSchema(Schema):
             if issubclass(field.__class__, map_class):
                 return pytype
 
-        raise UnsupportedValueError("unsupported field type %s" % field)
+        raise UnsupportedValueError(f"unsupported field type {str(field)}")
 
     def _get_schema_for_field(self, obj, field):
         """Get schema and validators for field."""
@@ -316,7 +316,7 @@ class JSONSchema(Schema):
         return schema
 
     def _schema_base(self, name):
-        return {"type": "object", "$ref": "#/definitions/{}".format(name)}
+        return {"type": "object", "$ref": f"#/definitions/{name}"}
 
     def dump(self, obj, **kwargs):
         """Take obj for later use: using class name to namespace definition."""
@@ -324,7 +324,7 @@ class JSONSchema(Schema):
         return super().dump(obj, **kwargs)
 
     @post_dump
-    def wrap(self, data, **_) -> typing.Dict[str, typing.Any]:
+    def wrap(self, data, **_) -> dict[str, typing.Any]:
         """Wrap this with the root schema definitions."""
         if self.nested:  # no need to wrap, will be in outer defs
             return data
@@ -338,5 +338,5 @@ class JSONSchema(Schema):
         return {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "definitions": self._nested_schema_classes,
-            "$ref": "#/definitions/{name}".format(name=name),
+            "$ref": f"#/definitions/{name}",
         }

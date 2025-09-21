@@ -47,8 +47,7 @@ class ReactJsonSchemaFormJSONSchema(JSONSchema):
         ReactJsonSchemaFormJSONSchema.dump_uischema
         """
 
-        for k, v in getattr(obj.Meta, "react_uischema_extra", {}).items():
-            yield k, v
+        yield from getattr(obj.Meta, "react_uischema_extra", {}).items()
 
         for field_name, field in obj.fields.items():
             # NOTE: doubled up to maintain backwards compatibility
