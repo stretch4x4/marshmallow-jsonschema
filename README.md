@@ -96,7 +96,7 @@ class AthleteSchema(Schema):
     user_schema = fields.Nested(JSONSchema)
     name = fields.String()
 
-    
+
 athlete = Athlete()
 athlete_schema = AthleteSchema()
 
@@ -190,7 +190,7 @@ class Colour(fields.Field):
         r = "%02X" % (r,)
         g = "%02X" % (g,)
         b = "%02X" % (b,)
-        return '#' + r + g + b 
+        return '#' + r + g + b
 
 class Gender(fields.String):
     def _jsonschema_type_mapping(self):
