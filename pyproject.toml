@@ -84,4 +84,7 @@ extend-exclude = [
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = []
+ignore = [
+    "COM",  # flake8 comma rules - redundant with ruff format
+    "D",  # pydocstyle - not currently a priority
+]
