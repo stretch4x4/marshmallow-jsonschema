@@ -103,8 +103,7 @@ ignore = [
     "TRY",  # exceptions
     "N",  # code style
     "UP",
-    "FBT",
-    "SLF",
+    "SLF",  # flake8-self - private vars, return to this
     "S101",
 ]
 
