@@ -95,7 +95,6 @@ ignore = [
     "ARG",  # Unused arguments - Return to this and enable
     "FURB116",  # hex conversion - Return to this and enable
     "PT",  # assertions
-    "B",  # loop control
     "F",  # vars
     "RUF",  # vars
     "EM",  # exceptions

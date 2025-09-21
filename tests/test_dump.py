@@ -19,7 +19,7 @@ def test_dump_schema():
     assert len(schema.fields) > 1
 
     props = dumped["definitions"]["UserSchema"]["properties"]
-    for field_name in schema.fields.keys():
+    for field_name in schema.fields:
         assert field_name in props
 
 

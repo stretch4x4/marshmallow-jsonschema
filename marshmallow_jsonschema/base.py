@@ -143,7 +143,7 @@ class JSONSchema(Schema):
         self._nested_schema_classes: dict[str, dict[str, typing.Any]] = {}
         self.nested = kwargs.pop("nested", False)
         self.props_ordered = kwargs.pop("props_ordered", False)
-        setattr(self.opts, "ordered", self.props_ordered)
+        self.opts.ordered = self.props_ordered
         super().__init__(*args, **kwargs)
 
     def get_properties(self, obj) -> dict[str, dict[str, typing.Any]]:
@@ -157,7 +157,7 @@ class JSONSchema(Schema):
         else:
             fields_items_sequence = sorted(obj.fields.items())
 
-        for field_name, field in fields_items_sequence:
+        for _field_name, field in fields_items_sequence:
             schema = self._get_schema_for_field(obj, field)
             properties[field.metadata.get("name") or field.data_key or field.name] = schema
 
@@ -167,7 +167,7 @@ class JSONSchema(Schema):
         """Fill out required field."""
         required = []
         field_items_iterable = sorted(obj().fields.items()) if callable(obj) else sorted(obj.fields.items())
-        for field_name, field in field_items_iterable:
+        for _field_name, field in field_items_iterable:
             if field.required:
                 required.append(field.data_key or field.name)
 
