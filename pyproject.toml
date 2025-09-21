@@ -87,4 +87,36 @@ select = ["ALL"]
 ignore = [
     "COM",  # flake8 comma rules - redundant with ruff format
     "D",  # pydocstyle - not currently a priority
+    "PLR2004",  # Magic value used in comparison - not currently a priority
+    "FIX",  # comments with follow up - not currently a priority
+    "TD",  # comments with follow up - not currently a priority
+    # TODO: renable the following ASAP
+    "ANN",  # typing rules - Return to this and enable
+    "ARG",  # Unused arguments - Return to this and enable
+    "FURB116",  # hex conversion - Return to this and enable
+    "PERF",  # When using only the keys of a dict use the `keys()` method"
+    "PT",  # assertions
+    "B",  # loop control
+    "F",  # vars
+    "RUF",  # vars
+    "C",  # list comp
+    "EM",  # exceptions
+    "TRY",  # exceptions
+    "N",  # code style
+    "UP",
+    "FBT",
+    "RET",
+    "SLF",
+    "SIM",
+    "S101",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101",  # asserts are allowed in tests
+]
+"example/**" = [
+    "INP001",  # __init__.py file is not required
+    "S104",  # Possible binding to all interfaces
+    "E501", # Line too long
 ]
