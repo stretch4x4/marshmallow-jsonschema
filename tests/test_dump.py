@@ -571,7 +571,7 @@ def test_required_uses_data_key():
 
     test_schema_definition = dumped["definitions"]["TestSchema"]
     assert "opt" in test_schema_definition["properties"]
-    assert "optional_value" == test_schema_definition["properties"]["opt"]["title"]
+    assert test_schema_definition["properties"]["opt"]["title"] == "optional_value"
     assert "required" in test_schema_definition
     assert "opt" in test_schema_definition["required"]
 

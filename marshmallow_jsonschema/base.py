@@ -166,10 +166,7 @@ class JSONSchema(Schema):
     def get_required(self, obj) -> typing.Union[typing.List[str], _Missing]:
         """Fill out required field."""
         required = []
-        if callable(obj):
-            field_items_iterable = sorted(obj().fields.items())
-        else:
-            field_items_iterable = sorted(obj.fields.items())
+        field_items_iterable = sorted(obj().fields.items()) if callable(obj) else sorted(obj.fields.items())
         for field_name, field in field_items_iterable:
             if field.required:
                 required.append(field.data_key or field.name)
@@ -264,10 +261,7 @@ class JSONSchema(Schema):
 
     def _from_nested_schema(self, obj, field):
         """Support nested field."""
-        if isinstance(field.nested, (str, bytes)):
-            nested = get_class(field.nested)
-        else:
-            nested = field.nested
+        nested = get_class(field.nested) if isinstance(field.nested, (str, bytes)) else field.nested
 
         if isclass(nested) and issubclass(nested, Schema):
             name = nested.__name__
