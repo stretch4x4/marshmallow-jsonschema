@@ -150,7 +150,7 @@ def test_regexp_error():
     schema = TestSchema()
 
     with pytest.raises(UnsupportedValueError):
-        dumped = validate_and_dump(schema)
+        validate_and_dump(schema)
 
 
 def test_custom_validator():
