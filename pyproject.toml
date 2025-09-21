@@ -104,7 +104,6 @@ ignore = [
     "N",  # code style
     "UP",
     "FBT",
-    "RET",
     "SLF",
     "SIM",
     "S101",

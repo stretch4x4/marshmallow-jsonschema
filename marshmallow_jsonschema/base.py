@@ -112,19 +112,17 @@ def _resolve_additional_properties(cls) -> bool:
     if additional_properties is not None:
         if additional_properties in (True, False):
             return additional_properties
-        else:
-            raise UnsupportedValueError("`additional_properties` must be either True or False")
+        raise UnsupportedValueError("`additional_properties` must be either True or False")
 
     unknown = getattr(meta, "unknown", None)
     if unknown is None:
         return False
-    elif unknown in (RAISE, EXCLUDE):
+    if unknown in (RAISE, EXCLUDE):
         return False
-    elif unknown == INCLUDE:
+    if unknown == INCLUDE:
         return True
-    else:
-        # This is probably unreachable as of marshmallow 3.16.0
-        raise UnsupportedValueError("Unknown value %s for `unknown`" % unknown)
+    # This is probably unreachable as of marshmallow 3.16.0
+    raise UnsupportedValueError("Unknown value %s for `unknown`" % unknown)
 
 
 class JSONSchema(Schema):
@@ -343,9 +341,8 @@ class JSONSchema(Schema):
         data["additionalProperties"] = _resolve_additional_properties(cls)
 
         self._nested_schema_classes[name] = data
-        root = {
+        return {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "definitions": self._nested_schema_classes,
             "$ref": "#/definitions/{name}".format(name=name),
         }
-        return root
