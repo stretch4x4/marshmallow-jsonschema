@@ -543,8 +543,8 @@ def test_dumps_iterable_enums():
     dumped = validate_and_dump(schema)
 
     assert dumped["definitions"]["TestSchema"]["properties"]["foo"] == {
-        "enum": [v for v in mapping.values()],
-        "enumNames": [k for k in mapping.keys()],
+        "enum": list(mapping.values()),
+        "enumNames": list(mapping.keys()),
         "title": "foo",
         "type": "integer",
     }
@@ -621,8 +621,7 @@ def test_sorting_properties():
     data = json_schema.dump(schema)
 
     sorted_keys = sorted(data["definitions"]["TestSchema"]["properties"].keys())
-    properties_names = [k for k in sorted_keys]
-    assert properties_names == ["a", "c", "d"]
+    assert list(sorted_keys) == ["a", "c", "d"]
 
     # Should be saving ordering of fields
     schema = TestSchema()
@@ -631,9 +630,8 @@ def test_sorting_properties():
     data = json_schema.dump(schema)
 
     keys = data["definitions"]["TestSchema"]["properties"].keys()
-    properties_names = [k for k in keys]
 
-    assert properties_names == ["d", "c", "a"]
+    assert list(keys) == ["d", "c", "a"]
 
 
 def test_enum_based():

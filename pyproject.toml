@@ -99,7 +99,6 @@ ignore = [
     "B",  # loop control
     "F",  # vars
     "RUF",  # vars
-    "C",  # list comp
     "EM",  # exceptions
     "TRY",  # exceptions
     "N",  # code style
