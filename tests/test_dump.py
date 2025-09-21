@@ -451,10 +451,7 @@ def test_unknown_typed_field():
 
         def _serialize(self, value, attr, obj):
             r, g, b = value
-            r = hex(r)[2:]
-            g = hex(g)[2:]
-            b = hex(b)[2:]
-            return "#" + r + g + b
+            return f"#{r:x}{g:x}{b:x}"
 
     class UserSchema(Schema):
         name = fields.String(required=True)
