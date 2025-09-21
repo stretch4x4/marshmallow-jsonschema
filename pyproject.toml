@@ -103,7 +103,6 @@ ignore = [
     "TRY",  # exceptions
     "N",  # code style
     "SLF",  # flake8-self - private vars, return to this
-    "S101",
 ]
 
 [tool.ruff.lint.per-file-ignores]
