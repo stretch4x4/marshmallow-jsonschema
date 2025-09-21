@@ -15,9 +15,7 @@ def test_equal_validator():
 
     dumped = validate_and_dump(schema)
 
-    assert dumped["definitions"]["UserSchema"]["properties"]["is_user"]["enum"] == [
-        True
-    ]
+    assert dumped["definitions"]["UserSchema"]["properties"]["is_user"]["enum"] == [True]
 
 
 def test_length_validator():
@@ -82,9 +80,7 @@ def test_one_of_empty_enum():
 
 def test_range():
     class TestSchema(Schema):
-        foo = fields.Integer(
-            validate=Range(min=1, min_inclusive=False, max=3, max_inclusive=False)
-        )
+        foo = fields.Integer(validate=Range(min=1, min_inclusive=False, max=3, max_inclusive=False))
         bar = fields.Integer(validate=Range(min=2, max=4))
 
     schema = TestSchema()

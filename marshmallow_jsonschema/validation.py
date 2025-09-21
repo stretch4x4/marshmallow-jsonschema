@@ -34,8 +34,7 @@ def handle_length(schema, field, validator, parent_schema):
         maxKey = "maxItems"
     else:
         raise UnsupportedValueError(
-            "In order to set the Length validator for JSON "
-            "schema, the field must be either a List, Nested or a String"
+            "In order to set the Length validator for JSON schema, the field must be either a List, Nested or a String"
         )
 
     if validator.min:
@@ -125,9 +124,7 @@ def handle_range(schema, field, validator, parent_schema):
             `fields.Number`.
     """
     if not isinstance(field, fields.Number):
-        raise UnsupportedValueError(
-            "'Range' validator for non-number fields is not supported"
-        )
+        raise UnsupportedValueError("'Range' validator for non-number fields is not supported")
 
     if validator.min is not None:
         # marshmallow 2 includes minimum by default
@@ -172,9 +169,7 @@ def handle_regexp(schema, field, validator, parent_schema):
             `fields.String`.
     """
     if not isinstance(field, fields.String):
-        raise UnsupportedValueError(
-            "'Regexp' validator for non-string fields is not supported"
-        )
+        raise UnsupportedValueError("'Regexp' validator for non-string fields is not supported")
 
     schema["pattern"] = validator.regex.pattern
 

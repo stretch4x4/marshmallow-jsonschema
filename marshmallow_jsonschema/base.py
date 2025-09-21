@@ -115,9 +115,7 @@ def _resolve_additional_properties(cls) -> bool:
         if additional_properties in (True, False):
             return additional_properties
         else:
-            raise UnsupportedValueError(
-                "`additional_properties` must be either True or False"
-            )
+            raise UnsupportedValueError("`additional_properties` must be either True or False")
 
     unknown = getattr(meta, "unknown", None)
     if unknown is None:
@@ -166,9 +164,7 @@ class JSONSchema(Schema):
 
         for field_name, field in fields_items_sequence:
             schema = self._get_schema_for_field(obj, field)
-            properties[field.metadata.get("name") or field.data_key or field.name] = (
-                schema
-            )
+            properties[field.metadata.get("name") or field.data_key or field.name] = schema
 
         return properties
 
@@ -219,9 +215,7 @@ class JSONSchema(Schema):
 
         if isinstance(field, fields.Dict):
             json_schema["additionalProperties"] = (
-                self._get_schema_for_field(obj, field.value_field)
-                if field.value_field
-                else {}
+                self._get_schema_for_field(obj, field.value_field) if field.value_field else {}
             )
         return json_schema
 
@@ -231,24 +225,15 @@ class JSONSchema(Schema):
         if field.load_by == LoadDumpOptions.value:
             # Python allows enum values to be almost anything, so it's easier to just load from the
             # names of the enum's which will have to be strings.
-            raise NotImplementedError(
-                "Currently do not support JSON schema for enums loaded by value"
-            )
+            raise NotImplementedError("Currently do not support JSON schema for enums loaded by value")
 
         return [value.name for value in field.enum]
 
-    def _from_union_schema(
-        self, obj, field
-    ) -> typing.Dict[str, typing.List[typing.Any]]:
+    def _from_union_schema(self, obj, field) -> typing.Dict[str, typing.List[typing.Any]]:
         """Get a union type schema. Uses anyOf to allow the value to be any of the provided sub fields"""
         assert ALLOW_UNIONS and isinstance(field, Union)
 
-        return {
-            "anyOf": [
-                self._get_schema_for_field(obj, sub_field)
-                for sub_field in field._candidate_fields
-            ]
-        }
+        return {"anyOf": [self._get_schema_for_field(obj, sub_field) for sub_field in field._candidate_fields]}
 
     def _get_python_type(self, field):
         """Get python type based on field subclass"""
@@ -276,13 +261,9 @@ class JSONSchema(Schema):
         # Apply any and all validators that field may have
         for validator in field.validators:
             if validator.__class__ in FIELD_VALIDATORS:
-                schema = FIELD_VALIDATORS[validator.__class__](
-                    schema, field, validator, obj
-                )
+                schema = FIELD_VALIDATORS[validator.__class__](schema, field, validator, obj)
             else:
-                base_class = getattr(
-                    validator, "_jsonschema_base_validator_class", None
-                )
+                base_class = getattr(validator, "_jsonschema_base_validator_class", None)
                 if base_class is not None and base_class in FIELD_VALIDATORS:
                     schema = FIELD_VALIDATORS[base_class](schema, field, validator, obj)
         return schema
@@ -317,9 +298,7 @@ class JSONSchema(Schema):
             wrapped_nested = self.__class__(nested=True)
             wrapped_dumped = wrapped_nested.dump(nested_instance)
 
-            wrapped_dumped["additionalProperties"] = _resolve_additional_properties(
-                nested_cls
-            )
+            wrapped_dumped["additionalProperties"] = _resolve_additional_properties(nested_cls)
 
             self._nested_schema_classes[name] = wrapped_dumped
 

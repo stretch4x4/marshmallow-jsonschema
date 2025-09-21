@@ -97,9 +97,7 @@ def test_nested_descriptions():
         yourfield = fields.Integer(required=True)
 
     class TestSchema(Schema):
-        nested = fields.Nested(
-            TestNestedSchema, metadata={"description": "Nested 1", "title": "Title1"}
-        )
+        nested = fields.Nested(TestNestedSchema, metadata={"description": "Nested 1", "title": "Title1"})
         yourfield_nested = fields.Integer(required=True)
 
     schema = TestSchema()
@@ -391,12 +389,8 @@ def test_function():
     """Function fields can be serialised if type is given."""
 
     class FnSchema(Schema):
-        fn_str = fields.Function(
-            lambda: "string", required=True, _jsonschema_type_mapping={"type": "string"}
-        )
-        fn_int = fields.Function(
-            lambda: 123, required=True, _jsonschema_type_mapping={"type": "number"}
-        )
+        fn_str = fields.Function(lambda: "string", required=True, _jsonschema_type_mapping={"type": "string"})
+        fn_int = fields.Function(lambda: 123, required=True, _jsonschema_type_mapping={"type": "number"})
 
     schema = FnSchema()
 
@@ -431,10 +425,7 @@ def test_title():
 
     dumped = validate_and_dump(schema)
 
-    assert (
-        dumped["definitions"]["TestSchema"]["properties"]["myfield"]["title"]
-        == "Brown Cowzz"
-    )
+    assert dumped["definitions"]["TestSchema"]["properties"]["myfield"]["title"] == "Brown Cowzz"
 
 
 def test_unknown_typed_field_throws_valueerror():
@@ -472,9 +463,7 @@ def test_unknown_typed_field():
 
     dumped = validate_and_dump(schema)
 
-    assert dumped["definitions"]["UserSchema"]["properties"]["favourite_colour"] == {
-        "type": "string"
-    }
+    assert dumped["definitions"]["UserSchema"]["properties"]["favourite_colour"] == {"type": "string"}
 
 
 def test_field_subclass():
@@ -546,9 +535,7 @@ def test_dumps_iterable_enums():
     mapping = {"a": 0, "b": 1, "c": 2}
 
     class TestSchema(Schema):
-        foo = fields.Integer(
-            validate=validate.OneOf(mapping.values(), labels=mapping.keys())
-        )
+        foo = fields.Integer(validate=validate.OneOf(mapping.values(), labels=mapping.keys()))
 
     schema = TestSchema()
 
@@ -663,12 +650,8 @@ def test_enum_based():
     json_schema = JSONSchema()
     data = json_schema.dump(schema)
 
-    assert (
-        data["definitions"]["TestSchema"]["properties"]["enum_prop"]["type"] == "string"
-    )
-    received_enum_values = sorted(
-        data["definitions"]["TestSchema"]["properties"]["enum_prop"]["enum"]
-    )
+    assert data["definitions"]["TestSchema"]["properties"]["enum_prop"]["type"] == "string"
+    received_enum_values = sorted(data["definitions"]["TestSchema"]["properties"]["enum_prop"]["enum"])
     assert received_enum_values == ["value_1", "value_2", "value_3"]
 
 
@@ -696,9 +679,7 @@ def test_union_based():
         field_2 = fields.Integer()
 
     class TestSchema(Schema):
-        union_prop = Union(
-            [fields.String(), fields.Integer(), fields.Nested(TestNestedSchema)]
-        )
+        union_prop = Union([fields.String(), fields.Integer(), fields.Nested(TestNestedSchema)])
 
     # Should be sorting of fields
     schema = TestSchema()
@@ -725,25 +706,14 @@ def test_union_based():
         "additionalProperties": False,
     }
 
-    assert (
-        string_schema
-        in data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]
-    )
-    assert (
-        integer_schema
-        in data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]
-    )
-    assert (
-        referenced_nested_schema
-        in data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]
-    )
+    assert string_schema in data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]
+    assert integer_schema in data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]
+    assert referenced_nested_schema in data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]
 
     assert data["definitions"]["TestNestedSchema"] == actual_nested_schema
 
     # Expect three possible schemas for the union type
-    assert (
-        len(data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]) == 3
-    )
+    assert len(data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]) == 3
 
 
 def test_dumping_recursive_schema():
@@ -764,9 +734,7 @@ def test_dumping_recursive_schema():
             # or you can use a lambda (as suggested in the marshmallow docs)
             nested_mwe_recursive = fields.Nested(lambda: RecursiveSchema())
 
-        return json_schema.dump(
-            RecursiveSchema()
-        )  # this shall _not_ raise an AttributeError
+        return json_schema.dump(RecursiveSchema())  # this shall _not_ raise an AttributeError
 
     lambda_schema = generate_recursive_schema_with_lambda()
     name_schema = generate_recursive_schema_with_name()

@@ -20,9 +20,7 @@ class UserSchema(Schema):
     name = fields.String(required=True, validate=validate.Length(min=1, max=255))
     age = fields.Float()
     created = fields.DateTime()
-    created_formatted = fields.DateTime(
-        format="%Y-%m-%d", attribute="created", dump_only=True
-    )
+    created_formatted = fields.DateTime(format="%Y-%m-%d", attribute="created", dump_only=True)
     created_iso = fields.DateTime(format="iso", attribute="created", dump_only=True)
     updated_naive = fields.NaiveDateTime(attribute="updated", dump_only=True)
     updated = fields.DateTime()
@@ -46,9 +44,7 @@ class UserSchema(Schema):
         )
     )
     various_data = fields.Dict()
-    addresses = fields.Nested(
-        Address, many=True, validate=validate.Length(min=1, max=3)
-    )
+    addresses = fields.Nested(Address, many=True, validate=validate.Length(min=1, max=3))
     github = fields.Nested(GithubProfile)
     const = fields.String(validate=validate.Length(equal=50))
     is_user = fields.Boolean(validate=validate.Equal(True))

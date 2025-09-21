@@ -28,10 +28,7 @@ def test_additional_properties_from_meta(additional_properties_value):
 
     dumped = validate_and_dump(schema)
 
-    assert (
-        dumped["definitions"]["TestSchema"]["additionalProperties"]
-        == additional_properties_value
-    )
+    assert dumped["definitions"]["TestSchema"]["additionalProperties"] == additional_properties_value
 
 
 def test_additional_properties_invalid_value():
@@ -77,10 +74,7 @@ def test_additional_properties_from_nested_meta(additional_properties_value):
 
     dumped = validate_and_dump(schema)
 
-    assert (
-        dumped["definitions"]["TestNestedSchema"]["additionalProperties"]
-        == additional_properties_value
-    )
+    assert dumped["definitions"]["TestNestedSchema"]["additionalProperties"] == additional_properties_value
 
 
 @pytest.mark.parametrize(
@@ -98,7 +92,4 @@ def test_additional_properties_deduced(unknown_value, additional_properties):
 
     dumped = validate_and_dump(schema)
 
-    assert (
-        dumped["definitions"]["TestSchema"]["additionalProperties"]
-        == additional_properties
-    )
+    assert dumped["definitions"]["TestSchema"]["additionalProperties"] == additional_properties
