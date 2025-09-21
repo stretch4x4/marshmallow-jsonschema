@@ -1,16 +1,14 @@
 import datetime
 import decimal
+import typing
 import uuid
 from enum import Enum
 from inspect import isclass
-import typing
 
-from marshmallow import fields, missing, Schema, validate
+from marshmallow import EXCLUDE, INCLUDE, RAISE, Schema, fields, missing, validate
 from marshmallow.class_registry import get_class
 from marshmallow.decorators import post_dump
 from marshmallow.utils import _Missing
-
-from marshmallow import INCLUDE, EXCLUDE, RAISE
 
 try:
     from marshmallow_union import Union
@@ -156,11 +154,10 @@ class JSONSchema(Schema):
 
         if self.props_ordered:
             fields_items_sequence = obj.fields.items()
+        elif callable(obj):
+            fields_items_sequence = sorted(obj().fields.items())
         else:
-            if callable(obj):
-                fields_items_sequence = sorted(obj().fields.items())
-            else:
-                fields_items_sequence = sorted(obj.fields.items())
+            fields_items_sequence = sorted(obj.fields.items())
 
         for field_name, field in fields_items_sequence:
             schema = self._get_schema_for_field(obj, field)
@@ -249,15 +246,14 @@ class JSONSchema(Schema):
             schema = field._jsonschema_type_mapping()
         elif "_jsonschema_type_mapping" in field.metadata:
             schema = field.metadata["_jsonschema_type_mapping"]
+        elif isinstance(field, fields.Nested):
+            # Special treatment for nested fields.
+            schema = self._from_nested_schema(obj, field)
+        elif ALLOW_UNIONS and isinstance(field, Union):
+            schema = self._from_union_schema(obj, field)
         else:
-            if isinstance(field, fields.Nested):
-                # Special treatment for nested fields.
-                schema = self._from_nested_schema(obj, field)
-            elif ALLOW_UNIONS and isinstance(field, Union):
-                schema = self._from_union_schema(obj, field)
-            else:
-                pytype = self._get_python_type(field)
-                schema = self._from_python_type(obj, field, pytype)
+            pytype = self._get_python_type(field)
+            schema = self._from_python_type(obj, field, pytype)
         # Apply any and all validators that field may have
         for validator in field.validators:
             if validator.__class__ in FIELD_VALIDATORS:
