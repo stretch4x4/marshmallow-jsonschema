@@ -92,7 +92,6 @@ ignore = [
     "TD",  # comments with follow up - not currently a priority
     # TODO: renable the following ASAP
     "ANN",  # typing rules - Return to this and enable
-    "ARG",  # Unused arguments - Return to this and enable
     "SLF",  # flake8-self - private vars, return to this
 ]
 

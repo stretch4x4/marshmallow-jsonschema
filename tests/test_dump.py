@@ -433,7 +433,7 @@ def test_title():
 
 def test_unknown_typed_field_throws_valueerror():
     class Invalid(fields.Field):
-        def _serialize(self, value, attr, obj):
+        def _serialize(self, value, _attr, _obj):
             return value
 
     class UserSchema(Schema):
@@ -451,7 +451,7 @@ def test_unknown_typed_field():
         def _jsonschema_type_mapping(self):
             return {"type": "string"}
 
-        def _serialize(self, value, attr, obj):
+        def _serialize(self, value, _attr, _obj):
             r, g, b = value
             return f"#{r:x}{g:x}{b:x}"
 

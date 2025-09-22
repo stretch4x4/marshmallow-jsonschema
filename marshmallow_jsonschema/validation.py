@@ -3,7 +3,7 @@ from marshmallow import fields
 from .exceptions import UnsupportedValueError
 
 
-def handle_length(schema, field, validator, parent_schema):
+def handle_length(schema, field, validator, _parent_schema):
     """Adds validation logic for ``marshmallow.validate.Length``, setting the
     values appropriately for ``fields.List``, ``fields.Nested``, and
     ``fields.String``.
@@ -15,7 +15,7 @@ def handle_length(schema, field, validator, parent_schema):
             who this post-processor belongs to.
         validator (marshmallow.validate.Length): The validator attached to the
             passed in field.
-        parent_schema (marshmallow.Schema): The Schema instance that the field
+        _parent_schema (marshmallow.Schema): The Schema instance that the field
             belongs to.
 
     Returns:
@@ -51,18 +51,18 @@ def handle_length(schema, field, validator, parent_schema):
     return schema
 
 
-def handle_one_of(schema, field, validator, parent_schema):
+def handle_one_of(schema, _field, validator, _parent_schema):
     """Adds the validation logic for ``marshmallow.validate.OneOf`` by setting
     the JSONSchema `enum` property to the allowed choices in the validator.
 
     Args:
         schema (dict): The original JSON schema we generated. This is what we
             want to post-process.
-        field (fields.Field): The field that generated the original schema and
+        _field (fields.Field): The field that generated the original schema and
             who this post-processor belongs to.
         validator (marshmallow.validate.OneOf): The validator attached to the
             passed in field.
-        parent_schema (marshmallow.Schema): The Schema instance that the field
+        _parent_schema (marshmallow.Schema): The Schema instance that the field
             belongs to.
 
     Returns:
@@ -75,18 +75,18 @@ def handle_one_of(schema, field, validator, parent_schema):
     return schema
 
 
-def handle_equal(schema, field, validator, parent_schema):
+def handle_equal(schema, _field, validator, _parent_schema):
     """Adds the validation logic for ``marshmallow.validate.Equal`` by setting
     the JSONSchema `enum` property to value of the validator.
 
     Args:
         schema (dict): The original JSON schema we generated. This is what we
             want to post-process.
-        field (fields.Field): The field that generated the original schema and
+        _field (fields.Field): The field that generated the original schema and
             who this post-processor belongs to.
         validator (marshmallow.validate.Equal): The validator attached to the
             passed in field.
-        parent_schema (marshmallow.Schema): The Schema instance that the field
+        _parent_schema (marshmallow.Schema): The Schema instance that the field
             belongs to.
 
     Returns:
@@ -102,7 +102,7 @@ def handle_equal(schema, field, validator, parent_schema):
     return schema
 
 
-def handle_range(schema, field, validator, parent_schema):
+def handle_range(schema, field, validator, _parent_schema):
     """Adds validation logic for ``marshmallow.validate.Range``, setting the
     values appropriately ``fields.Number`` and it's subclasses.
 
@@ -113,7 +113,7 @@ def handle_range(schema, field, validator, parent_schema):
             who this post-processor belongs to.
         validator (marshmallow.validate.Range): The validator attached to the
             passed in field.
-        parent_schema (marshmallow.Schema): The Schema instance that the field
+        _parent_schema (marshmallow.Schema): The Schema instance that the field
             belongs to.
 
     Returns:
@@ -148,7 +148,7 @@ def handle_range(schema, field, validator, parent_schema):
     return schema
 
 
-def handle_regexp(schema, field, validator, parent_schema):
+def handle_regexp(schema, field, validator, _parent_schema):
     """Adds validation logic for ``marshmallow.validate.Regexp``, setting the
     values appropriately ``fields.String`` and it's subclasses.
 
@@ -159,7 +159,7 @@ def handle_regexp(schema, field, validator, parent_schema):
             who this post-processor belongs to.
         validator (marshmallow.validate.Regexp): The validator attached to the
             passed in field.
-        parent_schema (marshmallow.Schema): The Schema instance that the field
+        _parent_schema (marshmallow.Schema): The Schema instance that the field
             belongs to.
 
     Returns:
