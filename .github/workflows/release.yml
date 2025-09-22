@@ -7,14 +7,15 @@
 # Instructions:
 #
 # 1. Finalise development on the master branch
-# 2. Update the version number in setup.py appropriately
+# 2. Update the version number in pyproject.toml appropriately
 # 3. Commit `git commit -m "vx.x.x release"`
 # 4. Tag `git tag vx.x.x`
 # 5. Push `git push && git push --tags`
 # 6. This workflow will automatically be triggered in GitHub Actions based on the new tag
-# 7. Update the version number in setup.py again to a development version e.g. v1.2.3.dev0
-# 8. Push `git push`
-name: Publish Python 🐍 distribution 📦 to PyPI
+# 7. Update the version number in pyproject.toml again to a development version e.g. v1.2.3.dev0
+# 8. Commit `git commit -m "Update version number between releases"`
+# 9. Push `git push`
+name: Publish Python 🐍 distribution 📦 to GitHub Releases and PyPI
 
 on:
   push:
@@ -61,7 +62,7 @@ jobs:
   publish-to-pypi:
     # Temporarily disabling this job until we take ownership of the project on PyPI or rename this fork
     if: false
-    name: Publish Python 🐍 distribution 📦 to PyPI
+    name: Publish Python distribution to PyPI 🐍
     needs:
     - publish-to-gh
     runs-on: ubuntu-latest
@@ -77,5 +78,5 @@ jobs:
       with:
         name: python-package-distributions
         path: dist/
-    - name: Publish distribution 📦 to PyPI
+    - name: Publish distribution to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
