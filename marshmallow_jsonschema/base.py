@@ -122,7 +122,7 @@ def _resolve_additional_properties(cls) -> bool:
     if unknown == INCLUDE:
         return True
     # This is probably unreachable as of marshmallow 3.16.0
-    raise UnsupportedValueError(f"Unknown value {str(unknown)} for `unknown`")
+    raise UnsupportedValueError(f"Unknown value {unknown!s} for `unknown`")
 
 
 class JSONSchema(Schema):
@@ -232,7 +232,7 @@ class JSONSchema(Schema):
             if issubclass(field.__class__, map_class):
                 return pytype
 
-        raise UnsupportedValueError(f"unsupported field type {str(field)}")
+        raise UnsupportedValueError(f"unsupported field type {field!s}")
 
     def _get_schema_for_field(self, obj, field):
         """Get schema and validators for field."""

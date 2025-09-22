@@ -94,7 +94,6 @@ ignore = [
     "ANN",  # typing rules - Return to this and enable
     "ARG",  # Unused arguments - Return to this and enable
     "PT",  # assertions
-    "RUF",  # vars
     "EM",  # exceptions
     "TRY",  # exceptions
     "N",  # code style
