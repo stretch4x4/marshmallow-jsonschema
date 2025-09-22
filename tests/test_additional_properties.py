@@ -17,7 +17,7 @@ def test_additional_properties_default():
     assert not dumped["definitions"]["TestSchema"]["additionalProperties"]
 
 
-@pytest.mark.parametrize("additional_properties_value", (False, True))
+@pytest.mark.parametrize("additional_properties_value", [False, True])
 def test_additional_properties_from_meta(additional_properties_value):
     class TestSchema(Schema):
         class Meta:
@@ -60,7 +60,7 @@ def test_additional_properties_nested_default():
     assert not dumped["definitions"]["TestSchema"]["additionalProperties"]
 
 
-@pytest.mark.parametrize("additional_properties_value", (False, True))
+@pytest.mark.parametrize("additional_properties_value", [False, True])
 def test_additional_properties_from_nested_meta(additional_properties_value):
     class TestNestedSchema(Schema):
         class Meta:
@@ -79,8 +79,8 @@ def test_additional_properties_from_nested_meta(additional_properties_value):
 
 
 @pytest.mark.parametrize(
-    "unknown_value, additional_properties",
-    ((RAISE, False), (INCLUDE, True), (EXCLUDE, False)),
+    ("unknown_value", "additional_properties"),
+    [(RAISE, False), (INCLUDE, True), (EXCLUDE, False)],
 )
 def test_additional_properties_deduced(unknown_value, additional_properties):
     class TestSchema(Schema):

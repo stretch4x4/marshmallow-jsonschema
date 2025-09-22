@@ -154,8 +154,10 @@ def test_nested_context():
     nested_show = dumped_show["definitions"]["TestNestedSchema"]["properties"]
     nested_hide = dumped_hide["definitions"]["TestNestedSchema"]["properties"]
 
-    assert "bar" in nested_show and "foo" in nested_show
-    assert "bar" in nested_hide and "foo" not in nested_hide
+    assert "bar" in nested_show
+    assert "foo" in nested_show
+    assert "bar" in nested_hide
+    assert "foo" not in nested_hide
 
 
 def test_list():

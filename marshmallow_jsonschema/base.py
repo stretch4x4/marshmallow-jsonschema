@@ -213,7 +213,8 @@ class JSONSchema(Schema):
         return json_schema
 
     def _get_enum_values(self, field) -> list[str]:
-        assert ALLOW_ENUMS and isinstance(field, EnumField)  # noqa: S101, asserts will be removed in open PR
+        assert ALLOW_ENUMS  # noqa: S101, asserts will be removed in open PR
+        assert isinstance(field, EnumField)  # noqa: S101, asserts will be removed in open PR
 
         if field.load_by == LoadDumpOptions.value:
             # Python allows enum values to be almost anything, so it's easier to just load from the
@@ -225,7 +226,8 @@ class JSONSchema(Schema):
 
     def _from_union_schema(self, obj, field) -> dict[str, list[typing.Any]]:
         """Get a union type schema. Uses anyOf to allow the value to be any of the provided sub fields"""
-        assert ALLOW_UNIONS and isinstance(field, Union)  # noqa: S101, asserts will be removed in open PR
+        assert ALLOW_UNIONS  # noqa: S101, asserts will be removed in open PR
+        assert isinstance(field, Union)  # noqa: S101, asserts will be removed in open PR
 
         return {"anyOf": [self._get_schema_for_field(obj, sub_field) for sub_field in field._candidate_fields]}
 
