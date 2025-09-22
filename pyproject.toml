@@ -56,9 +56,6 @@ Repository = "https://github.com/stretch4x4/marshmallow-jsonschema.git"
 Issues = "https://github.com/stretch4x4/marshmallow-jsonschema/issues"
 Changelog = "https://github.com/stretch4x4/marshmallow-jsonschema/blob/master/CHANGES"
 
-[tool.black]
-target-version = ['py310', 'py311', 'py312', 'py313']
-
 [dependency-groups]
 dev = [
     "coverage~=7.10",
@@ -68,4 +65,47 @@ dev = [
     "pre-commit~=4.3",
     "pytest~=8.4",
     "pytest-cov~=7.0",
+    "ruff==0.13.1",  # hard pinned to match the pre-commit-config
+]
+
+[tool.ruff]
+line-length = 120
+# gitignore contents (and potentially other ignore files) are also excluded
+respect-gitignore = true
+# overlaps with existing gitignore exclusions are ok
+extend-exclude = [
+    "**/env/**",
+    "**/build/**",
+    "**/dist/**",
+    "**/_build/**",
+    "**/.eggs/**",
+    "**/.git/**",
+    "**/.hg/**",
+    "**/.mypy_cache/**",
+    "**/.nox/**",
+    "**/.venv/**",
+    "**/docs/**",
+]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "COM",  # flake8 comma rules - redundant with ruff format
+    "D",  # pydocstyle - not currently a priority
+    "PLR2004",  # Magic value used in comparison - not currently a priority
+    "FIX",  # comments with follow up - not currently a priority
+    "TD",  # comments with follow up - not currently a priority
+    # TODO: renable the following
+    "ANN",  # typing rules - Return to this and enable
+    "SLF",  # flake8-self - private vars, return to this
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101",  # asserts are allowed in tests
+]
+"example/**" = [
+    "INP001",  # __init__.py file is not required
+    "S104",  # Possible binding to all interfaces
+    "E501", # Line too long
 ]

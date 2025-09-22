@@ -3,7 +3,7 @@ from marshmallow import fields
 from .exceptions import UnsupportedValueError
 
 
-def handle_length(schema, field, validator, parent_schema):
+def handle_length(schema, field, validator, _parent_schema):
     """Adds validation logic for ``marshmallow.validate.Length``, setting the
     values appropriately for ``fields.List``, ``fields.Nested``, and
     ``fields.String``.
@@ -15,7 +15,7 @@ def handle_length(schema, field, validator, parent_schema):
             who this post-processor belongs to.
         validator (marshmallow.validate.Length): The validator attached to the
             passed in field.
-        parent_schema (marshmallow.Schema): The Schema instance that the field
+        _parent_schema (marshmallow.Schema): The Schema instance that the field
             belongs to.
 
     Returns:
@@ -27,42 +27,42 @@ def handle_length(schema, field, validator, parent_schema):
             `fields.List`, `fields.Nested`, or `fields.String`
     """
     if isinstance(field, fields.String):
-        minKey = "minLength"
-        maxKey = "maxLength"
+        min_key = "minLength"
+        max_key = "maxLength"
     elif isinstance(field, (fields.List, fields.Nested)):
-        minKey = "minItems"
-        maxKey = "maxItems"
+        min_key = "minItems"
+        max_key = "maxItems"
     else:
-        raise UnsupportedValueError(
-            "In order to set the Length validator for JSON "
-            "schema, the field must be either a List, Nested or a String"
+        msg = (
+            "In order to set the Length validator for JSON schema, the field must be either a List, Nested or a String"
         )
+        raise UnsupportedValueError(msg)
 
     if validator.min:
-        schema[minKey] = validator.min
+        schema[min_key] = validator.min
 
     if validator.max:
-        schema[maxKey] = validator.max
+        schema[max_key] = validator.max
 
     if validator.equal:
-        schema[minKey] = validator.equal
-        schema[maxKey] = validator.equal
+        schema[min_key] = validator.equal
+        schema[max_key] = validator.equal
 
     return schema
 
 
-def handle_one_of(schema, field, validator, parent_schema):
+def handle_one_of(schema, _field, validator, _parent_schema):
     """Adds the validation logic for ``marshmallow.validate.OneOf`` by setting
     the JSONSchema `enum` property to the allowed choices in the validator.
 
     Args:
         schema (dict): The original JSON schema we generated. This is what we
             want to post-process.
-        field (fields.Field): The field that generated the original schema and
+        _field (fields.Field): The field that generated the original schema and
             who this post-processor belongs to.
         validator (marshmallow.validate.OneOf): The validator attached to the
             passed in field.
-        parent_schema (marshmallow.Schema): The Schema instance that the field
+        _parent_schema (marshmallow.Schema): The Schema instance that the field
             belongs to.
 
     Returns:
@@ -75,18 +75,18 @@ def handle_one_of(schema, field, validator, parent_schema):
     return schema
 
 
-def handle_equal(schema, field, validator, parent_schema):
+def handle_equal(schema, _field, validator, _parent_schema):
     """Adds the validation logic for ``marshmallow.validate.Equal`` by setting
     the JSONSchema `enum` property to value of the validator.
 
     Args:
         schema (dict): The original JSON schema we generated. This is what we
             want to post-process.
-        field (fields.Field): The field that generated the original schema and
+        _field (fields.Field): The field that generated the original schema and
             who this post-processor belongs to.
         validator (marshmallow.validate.Equal): The validator attached to the
             passed in field.
-        parent_schema (marshmallow.Schema): The Schema instance that the field
+        _parent_schema (marshmallow.Schema): The Schema instance that the field
             belongs to.
 
     Returns:
@@ -102,7 +102,7 @@ def handle_equal(schema, field, validator, parent_schema):
     return schema
 
 
-def handle_range(schema, field, validator, parent_schema):
+def handle_range(schema, field, validator, _parent_schema):
     """Adds validation logic for ``marshmallow.validate.Range``, setting the
     values appropriately ``fields.Number`` and it's subclasses.
 
@@ -113,7 +113,7 @@ def handle_range(schema, field, validator, parent_schema):
             who this post-processor belongs to.
         validator (marshmallow.validate.Range): The validator attached to the
             passed in field.
-        parent_schema (marshmallow.Schema): The Schema instance that the field
+        _parent_schema (marshmallow.Schema): The Schema instance that the field
             belongs to.
 
     Returns:
@@ -125,9 +125,8 @@ def handle_range(schema, field, validator, parent_schema):
             `fields.Number`.
     """
     if not isinstance(field, fields.Number):
-        raise UnsupportedValueError(
-            "'Range' validator for non-number fields is not supported"
-        )
+        msg = "'Range' validator for non-number fields is not supported"
+        raise UnsupportedValueError(msg)
 
     if validator.min is not None:
         # marshmallow 2 includes minimum by default
@@ -149,7 +148,7 @@ def handle_range(schema, field, validator, parent_schema):
     return schema
 
 
-def handle_regexp(schema, field, validator, parent_schema):
+def handle_regexp(schema, field, validator, _parent_schema):
     """Adds validation logic for ``marshmallow.validate.Regexp``, setting the
     values appropriately ``fields.String`` and it's subclasses.
 
@@ -160,7 +159,7 @@ def handle_regexp(schema, field, validator, parent_schema):
             who this post-processor belongs to.
         validator (marshmallow.validate.Regexp): The validator attached to the
             passed in field.
-        parent_schema (marshmallow.Schema): The Schema instance that the field
+        _parent_schema (marshmallow.Schema): The Schema instance that the field
             belongs to.
 
     Returns:
@@ -172,9 +171,8 @@ def handle_regexp(schema, field, validator, parent_schema):
             `fields.String`.
     """
     if not isinstance(field, fields.String):
-        raise UnsupportedValueError(
-            "'Regexp' validator for non-string fields is not supported"
-        )
+        msg = "'Regexp' validator for non-string fields is not supported"
+        raise UnsupportedValueError(msg)
 
     schema["pattern"] = validator.regex.pattern
 
