@@ -90,7 +90,7 @@ ignore = [
     "PLR2004",  # Magic value used in comparison - not currently a priority
     "FIX",  # comments with follow up - not currently a priority
     "TD",  # comments with follow up - not currently a priority
-    # TODO: renable the following ASAP
+    # TODO: renable the following
     "ANN",  # typing rules - Return to this and enable
     "SLF",  # flake8-self - private vars, return to this
 ]
