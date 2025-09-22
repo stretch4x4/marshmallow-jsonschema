@@ -14,8 +14,14 @@
 
 ## Overview
 
-![Build Status](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/build.yml/badge.svg)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
+![Build Status](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/pytest_and_coverage.yml/badge.svg)
+![Coverage](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/pytest_and_coverage.yml/badge.svg)
+[![Code style: black](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/black.yml/badge.svg)](https://github.com/psf/black)
+[![CodeQL](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/codeql-analysis.yml)
+[![OSSAR](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/ossar-analysis.yml/badge.svg)](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/ossar-analysis.yml)
+![PyPI - Version](https://img.shields.io/pypi/v/marshmallow-jsonschema)
+![GitHub Release](https://img.shields.io/github/v/release/stretch4x4/marshmallow-jsonschema)
+
 
  marshmallow-jsonschema translates marshmallow schemas into
  JSON Schema Draft v7 compliant jsonschema. See http://json-schema.org/
