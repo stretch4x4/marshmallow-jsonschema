@@ -1,11 +1,11 @@
 import datetime
 import decimal
+import typing
 import uuid
 from enum import Enum
 from inspect import isclass
-import typing
 
-from marshmallow import fields, missing, Schema, validate
+from marshmallow import EXCLUDE, INCLUDE, RAISE, Schema, fields, missing, validate
 from marshmallow.class_registry import get_class
 from marshmallow.decorators import post_dump
 from marshmallow.utils import _Missing
@@ -25,7 +25,6 @@ def marshmallow_version_supports_native_enums() -> bool:
     returns true if and only if the version of marshmallow installed supports enums natively
     """
     return Version(_MarshmallowVersion) >= Version("3.18")
-
 
 try:
     from marshmallow_union import Union
@@ -135,20 +134,19 @@ def _resolve_additional_properties(cls) -> bool:
     if additional_properties is not None:
         if additional_properties in (True, False):
             return additional_properties
-        else:
-            raise UnsupportedValueError(
-                "`additional_properties` must be either True or False"
-            )
+        msg = "`additional_properties` must be either True or False"
+        raise UnsupportedValueError(msg)
 
     unknown = getattr(meta, "unknown", None)
     if unknown is None:
         return False
-    elif unknown in (RAISE, EXCLUDE):
+    if unknown in (RAISE, EXCLUDE):
         return False
-    elif unknown == INCLUDE:
+    if unknown == INCLUDE:
         return True
-    else:
-        raise UnsupportedValueError("Unknown value %s for `unknown`" % unknown)
+    # This is probably unreachable as of marshmallow 3.16.0
+    msg = f"Unknown value {unknown!s} for `unknown`"
+    raise UnsupportedValueError(msg)
 
 
 class JSONSchema(Schema):
@@ -166,45 +164,44 @@ class JSONSchema(Schema):
                                    Note: For the marshmallow scheme, also need to enable
                                    ordering of fields too (via `class Meta`, attribute `ordered`).
         """
-        self._nested_schema_classes: typing.Dict[str, typing.Dict[str, typing.Any]] = {}
+        self._nested_schema_classes: dict[str, dict[str, typing.Any]] = {}
         self.nested = kwargs.pop("nested", False)
         self.props_ordered = kwargs.pop("props_ordered", False)
-        setattr(self.opts, "ordered", self.props_ordered)
+        self.opts.ordered = self.props_ordered
         super().__init__(*args, **kwargs)
 
-    def get_properties(self, obj) -> typing.Dict[str, typing.Dict[str, typing.Any]]:
+    def get_properties(self, obj) -> dict[str, dict[str, typing.Any]]:
         """Fill out properties field."""
         properties = self.dict_class()
 
         if self.props_ordered:
             fields_items_sequence = obj.fields.items()
+        elif callable(obj):
+            fields_items_sequence = sorted(obj().fields.items())
         else:
             fields_items_sequence = sorted(obj.fields.items())
 
-        for field_name, field in fields_items_sequence:
+        for _field_name, field in fields_items_sequence:
             schema = self._get_schema_for_field(obj, field)
-            properties[
-                field.metadata.get("name") or field.data_key or field.name
-            ] = schema
+            properties[field.metadata.get("name") or field.data_key or field.name] = schema
 
         return properties
 
-    def get_required(self, obj) -> typing.Union[typing.List[str], _Missing]:
+    def get_required(self, obj) -> list[str] | _Missing:
         """Fill out required field."""
         required = []
-
-        for field_name, field in sorted(obj.fields.items()):
+        field_items_iterable = sorted(obj().fields.items()) if callable(obj) else sorted(obj.fields.items())
+        for _field_name, field in field_items_iterable:
             if field.required:
                 required.append(field.data_key or field.name)
 
         return required or missing
 
-    def _from_python_type(self, obj, field, pytype) -> typing.Dict[str, typing.Any]:
+    def _from_python_type(self, obj, field, pytype) -> dict[str, typing.Any]:
         """Get schema definition from python type."""
         json_schema = {"title": field.attribute or field.name or ""}
 
-        for key, val in PY_TO_JSON_TYPES_MAP[pytype].items():
-            json_schema[key] = val
+        json_schema.update(dict(PY_TO_JSON_TYPES_MAP[pytype]))
 
         if field.dump_only:
             json_schema["readOnly"] = True
@@ -239,9 +236,7 @@ class JSONSchema(Schema):
 
         if isinstance(field, fields.Dict):
             json_schema["additionalProperties"] = (
-                self._get_schema_for_field(obj, field.value_field)
-                if field.value_field
-                else {}
+                self._get_schema_for_field(obj, field.value_field) if field.value_field else {}
             )
         return json_schema
 
@@ -256,9 +251,8 @@ class JSONSchema(Schema):
         if field.load_by == LoadDumpOptions.value:
             # Python allows enum values to be almost anything, so it's easier to just load from the
             # names of the enum's which will have to be strings.
-            raise NotImplementedError(
-                "Currently do not support JSON schema for enums loaded by value"
-            )
+            msg = "Currently do not support JSON schema for enums loaded by value"
+            raise NotImplementedError(msg)
 
         return [value.name for value in field.enum]
 
@@ -287,14 +281,10 @@ class JSONSchema(Schema):
         self, obj, field
     ) -> typing.Dict[str, typing.List[typing.Any]]:
         """Get a union type schema. Uses anyOf to allow the value to be any of the provided sub fields"""
-        assert ALLOW_UNIONS and isinstance(field, Union)
+        assert ALLOW_UNIONS  # noqa: S101, asserts will be removed in open PR
+        assert isinstance(field, Union)  # noqa: S101, asserts will be removed in open PR
 
-        return {
-            "anyOf": [
-                self._get_schema_for_field(obj, sub_field)
-                for sub_field in field._candidate_fields
-            ]
-        }
+        return {"anyOf": [self._get_schema_for_field(obj, sub_field) for sub_field in field._candidate_fields]}
 
     def _get_python_type(self, field):
         """Get python type based on field subclass"""
@@ -302,7 +292,8 @@ class JSONSchema(Schema):
             if issubclass(field.__class__, map_class):
                 return pytype
 
-        raise UnsupportedValueError("unsupported field type %s" % field)
+        msg = f"unsupported field type {field!s}"
+        raise UnsupportedValueError(msg)
 
     def _get_schema_for_field(self, obj, field):
         """Get schema and validators for field."""
@@ -310,35 +301,27 @@ class JSONSchema(Schema):
             schema = field._jsonschema_type_mapping()
         elif "_jsonschema_type_mapping" in field.metadata:
             schema = field.metadata["_jsonschema_type_mapping"]
+        elif isinstance(field, fields.Nested):
+            # Special treatment for nested fields.
+            schema = self._from_nested_schema(obj, field)
+        elif ALLOW_UNIONS and isinstance(field, Union):
+            schema = self._from_union_schema(obj, field)
         else:
-            if isinstance(field, fields.Nested):
-                # Special treatment for nested fields.
-                schema = self._from_nested_schema(obj, field)
-            elif ALLOW_UNIONS and isinstance(field, Union):
-                schema = self._from_union_schema(obj, field)
-            else:
-                pytype = self._get_python_type(field)
-                schema = self._from_python_type(obj, field, pytype)
+            pytype = self._get_python_type(field)
+            schema = self._from_python_type(obj, field, pytype)
         # Apply any and all validators that field may have
         for validator in field.validators:
             if validator.__class__ in FIELD_VALIDATORS:
-                schema = FIELD_VALIDATORS[validator.__class__](
-                    schema, field, validator, obj
-                )
+                schema = FIELD_VALIDATORS[validator.__class__](schema, field, validator, obj)
             else:
-                base_class = getattr(
-                    validator, "_jsonschema_base_validator_class", None
-                )
+                base_class = getattr(validator, "_jsonschema_base_validator_class", None)
                 if base_class is not None and base_class in FIELD_VALIDATORS:
                     schema = FIELD_VALIDATORS[base_class](schema, field, validator, obj)
         return schema
 
     def _from_nested_schema(self, obj, field):
         """Support nested field."""
-        if isinstance(field.nested, (str, bytes)):
-            nested = get_class(field.nested)
-        else:
-            nested = field.nested
+        nested = get_class(field.nested) if isinstance(field.nested, (str, bytes)) else field.nested
 
         if isclass(nested) and issubclass(nested, Schema):
             name = nested.__name__
@@ -346,6 +329,11 @@ class JSONSchema(Schema):
             exclude = field.exclude
             nested_cls = nested
             nested_instance = nested(only=only, exclude=exclude, context=obj.context)
+        elif callable(nested):
+            nested_instance = nested()
+            nested_type = type(nested_instance)
+            name = nested_type.__name__
+            nested_cls = nested_type.__class__
         else:
             nested_cls = nested.__class__
             name = nested_cls.__name__
@@ -358,16 +346,14 @@ class JSONSchema(Schema):
             wrapped_nested = self.__class__(nested=True)
             wrapped_dumped = wrapped_nested.dump(nested_instance)
 
-            wrapped_dumped["additionalProperties"] = _resolve_additional_properties(
-                nested_cls
-            )
+            wrapped_dumped["additionalProperties"] = _resolve_additional_properties(nested_cls)
 
             self._nested_schema_classes[name] = wrapped_dumped
 
             self._nested_schema_classes.update(wrapped_nested._nested_schema_classes)
 
         # and the schema is just a reference to the def
-        schema = {"type": "object", "$ref": "#/definitions/{}".format(name)}
+        schema = self._schema_base(name)
 
         # NOTE: doubled up to maintain backwards compatibility
         metadata = field.metadata.get("metadata", {})
@@ -389,13 +375,16 @@ class JSONSchema(Schema):
 
         return schema
 
+    def _schema_base(self, name):
+        return {"type": "object", "$ref": f"#/definitions/{name}"}
+
     def dump(self, obj, **kwargs):
         """Take obj for later use: using class name to namespace definition."""
         self.obj = obj
         return super().dump(obj, **kwargs)
 
     @post_dump
-    def wrap(self, data, **_) -> typing.Dict[str, typing.Any]:
+    def wrap(self, data, **_) -> dict[str, typing.Any]:
         """Wrap this with the root schema definitions."""
         if self.nested:  # no need to wrap, will be in outer defs
             return data
@@ -406,9 +395,8 @@ class JSONSchema(Schema):
         data["additionalProperties"] = _resolve_additional_properties(cls)
 
         self._nested_schema_classes[name] = data
-        root = {
+        return {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "definitions": self._nested_schema_classes,
-            "$ref": "#/definitions/{name}".format(name=name),
+            "$ref": f"#/definitions/{name}",
         }
-        return root
