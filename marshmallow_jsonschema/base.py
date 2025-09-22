@@ -112,7 +112,8 @@ def _resolve_additional_properties(cls) -> bool:
     if additional_properties is not None:
         if additional_properties in (True, False):
             return additional_properties
-        raise UnsupportedValueError("`additional_properties` must be either True or False")
+        msg = "`additional_properties` must be either True or False"
+        raise UnsupportedValueError(msg)
 
     unknown = getattr(meta, "unknown", None)
     if unknown is None:
@@ -122,7 +123,8 @@ def _resolve_additional_properties(cls) -> bool:
     if unknown == INCLUDE:
         return True
     # This is probably unreachable as of marshmallow 3.16.0
-    raise UnsupportedValueError(f"Unknown value {unknown!s} for `unknown`")
+    msg = f"Unknown value {unknown!s} for `unknown`"
+    raise UnsupportedValueError(msg)
 
 
 class JSONSchema(Schema):
@@ -216,7 +218,8 @@ class JSONSchema(Schema):
         if field.load_by == LoadDumpOptions.value:
             # Python allows enum values to be almost anything, so it's easier to just load from the
             # names of the enum's which will have to be strings.
-            raise NotImplementedError("Currently do not support JSON schema for enums loaded by value")
+            msg = "Currently do not support JSON schema for enums loaded by value"
+            raise NotImplementedError(msg)
 
         return [value.name for value in field.enum]
 
@@ -232,7 +235,8 @@ class JSONSchema(Schema):
             if issubclass(field.__class__, map_class):
                 return pytype
 
-        raise UnsupportedValueError(f"unsupported field type {field!s}")
+        msg = f"unsupported field type {field!s}"
+        raise UnsupportedValueError(msg)
 
     def _get_schema_for_field(self, obj, field):
         """Get schema and validators for field."""

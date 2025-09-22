@@ -94,7 +94,6 @@ ignore = [
     "ANN",  # typing rules - Return to this and enable
     "ARG",  # Unused arguments - Return to this and enable
     "PT",  # assertions
-    "EM",  # exceptions
     "TRY",  # exceptions
     "SLF",  # flake8-self - private vars, return to this
 ]
