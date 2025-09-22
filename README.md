@@ -2,8 +2,7 @@
 
 > **NOTE**
 >
-> This is a maintained refactor of the original [marshmallow-jsonschema project]
-  (https://github.com/fuhrysteve/marshmallow-jsonschema).
+> This is a maintained refactor of the original [marshmallow-jsonschema project](https://github.com/fuhrysteve/marshmallow-jsonschema).
 >
 > The main goals of this refactor were:
 >
@@ -35,7 +34,7 @@ or mobile device).
 
 ## Installation
 
-Requires python>=3.6 and marshmallow>=3.11. (For python 2 & marshmallow 2 support, please use
+Requires python>=3.10 and marshmallow>=3.11. (For python 2 & marshmallow 2 support, please use
 marshmallow-jsonschema<0.11)
 
 ```
