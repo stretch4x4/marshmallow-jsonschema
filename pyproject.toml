@@ -96,7 +96,6 @@ ignore = [
     "PT",  # assertions
     "EM",  # exceptions
     "TRY",  # exceptions
-    "N",  # code style
     "SLF",  # flake8-self - private vars, return to this
 ]
 
