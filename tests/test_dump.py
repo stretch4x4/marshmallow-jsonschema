@@ -17,6 +17,7 @@ try:
 except ImportError:
     assert TEST_MARSHMALLOW_NATIVE_ENUM is False
 
+
 def test_dump_schema():
     schema = UserSchema()
 
@@ -658,9 +659,11 @@ def test_marshmallow_enum_enum_based():
     received_enum_values = sorted(data["definitions"]["TestSchema"]["properties"]["enum_prop"]["enum"])
     assert received_enum_values == ["value_1", "value_2", "value_3"]
 
+
 def test_native_marshmallow_enum_based():
     if not TEST_MARSHMALLOW_NATIVE_ENUM:
         return
+
     class TestEnum(Enum):
         value_1 = 0
         value_2 = 1
@@ -675,13 +678,10 @@ def test_native_marshmallow_enum_based():
     json_schema = JSONSchema()
     data = json_schema.dump(schema)
 
-    assert (
-        data["definitions"]["TestSchema"]["properties"]["enum_prop"]["type"] == "string"
-    )
-    received_enum_values = sorted(
-        data["definitions"]["TestSchema"]["properties"]["enum_prop"]["enum"]
-    )
+    assert data["definitions"]["TestSchema"]["properties"]["enum_prop"]["type"] == "string"
+    received_enum_values = sorted(data["definitions"]["TestSchema"]["properties"]["enum_prop"]["enum"])
     assert received_enum_values == ["value_1", "value_2", "value_3"]
+
 
 def test_marshmallow_enum_enum_based_load_dump_value():
     class TestEnum(Enum):
@@ -700,9 +700,11 @@ def test_marshmallow_enum_enum_based_load_dump_value():
     with pytest.raises(NotImplementedError):
         validate_and_dump(json_schema.dump(schema))
 
+
 def test_native_marshmallow_enum_based_load_dump_value():
     if not TEST_MARSHMALLOW_NATIVE_ENUM:
         return
+
     class TestEnum(Enum):
         value_1 = 0
         value_2 = 1
@@ -718,6 +720,7 @@ def test_native_marshmallow_enum_based_load_dump_value():
 
     with pytest.raises(NotImplementedError):
         validate_and_dump(json_schema.dump(schema))
+
 
 def test_union_based():
     class TestNestedSchema(Schema):
