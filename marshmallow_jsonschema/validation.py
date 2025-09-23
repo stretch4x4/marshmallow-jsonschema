@@ -69,7 +69,7 @@ def handle_one_of(schema, field, validator, _parent_schema):
         dict: New JSON Schema that has been post processed and
             altered.
     """
-    if schema["type"] not in ["string", "number"]:
+    if schema["type"] not in ["string", "integer"]:
         return schema
 
     if "oneOf" in schema:

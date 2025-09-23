@@ -549,8 +549,7 @@ def test_dumps_iterable_enums():
     dumped = validate_and_dump(schema)
 
     assert dumped["definitions"]["TestSchema"]["properties"]["foo"] == {
-        "oneOf": [{"type": "number", "title": k, "const": v} for k, v in mapping.items()],
-        "format": "integer",
+        "oneOf": [{"type": "integer", "title": k, "const": v} for k, v in mapping.items()],
         "title": "foo",
         "type": "integer",
     }
