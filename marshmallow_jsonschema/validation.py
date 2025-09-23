@@ -51,14 +51,14 @@ def handle_length(schema, field, validator, _parent_schema):
     return schema
 
 
-def handle_one_of(schema, _field, validator, _parent_schema):
+def handle_one_of(schema, field, validator, _parent_schema):
     """Adds the validation logic for ``marshmallow.validate.OneOf`` by setting
-    the JSONSchema `enum` property to the allowed choices in the validator.
+    the JSONSchema `oneOf` property to the allowed choices in the validator.
 
     Args:
         schema (dict): The original JSON schema we generated. This is what we
             want to post-process.
-        _field (fields.Field): The field that generated the original schema and
+        field (fields.Field): The field that generated the original schema and
             who this post-processor belongs to.
         validator (marshmallow.validate.OneOf): The validator attached to the
             passed in field.
@@ -69,8 +69,21 @@ def handle_one_of(schema, _field, validator, _parent_schema):
         dict: New JSON Schema that has been post processed and
             altered.
     """
-    schema["enum"] = list(validator.choices)
-    schema["enumNames"] = list(validator.labels)
+    if schema["type"] not in ["string", "integer"]:
+        return schema
+
+    if "oneOf" in schema:
+        return schema
+
+    choices = [field._serialize(choice, field.name, None) for choice in validator.choices]
+    if not choices:
+        return schema
+
+    labels = validator.labels if validator.labels else choices
+    schema["oneOf"] = [
+        {"type": schema["type"], "title": label, "const": choice}
+        for choice, label in zip(choices, labels, strict=False)
+    ]
 
     return schema
 
