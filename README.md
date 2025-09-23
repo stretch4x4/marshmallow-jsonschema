@@ -13,9 +13,10 @@
 
 ## Overview
 
+<!--- TODO: re-enable the following badge once we split coverage and testing - put after testing --->
+<!--- ![Coverage]&#40;https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/pytest_and_coverage.yml/badge.svg&#41;) --->
 ![Build Status](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/pytest_and_coverage.yml/badge.svg)
-![Coverage](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/pytest_and_coverage.yml/badge.svg)
-[![Code style: black](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/black.yml/badge.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![CodeQL](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/codeql-analysis.yml)
 [![OSSAR](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/ossar-analysis.yml/badge.svg)](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/ossar-analysis.yml)
 ![PyPI - Version](https://img.shields.io/pypi/v/marshmallow-jsonschema)
