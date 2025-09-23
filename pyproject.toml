@@ -60,12 +60,13 @@ Changelog = "https://github.com/stretch4x4/marshmallow-jsonschema/blob/master/CH
 dev = [
     "coverage~=7.10",
     "jsonschema~=4.25",
+    "marshmallow-dataclass>=8.7.1",
     "marshmallow-enum~=1.5",
     "marshmallow-union~=0.1",
     "pre-commit~=4.3",
     "pytest~=8.4",
     "pytest-cov~=7.0",
-    "ruff==0.13.1",  # hard pinned to match the pre-commit-config
+    "ruff==0.13.1", # hard pinned to match the pre-commit-config
 ]
 
 [tool.ruff]
