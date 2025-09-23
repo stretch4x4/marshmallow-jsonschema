@@ -20,6 +20,7 @@ from packaging.version import Version
 
 from .exceptions import UnsupportedValueError
 from .validation import (
+    handle_any_of,
     handle_equal,
     handle_length,
     handle_one_of,
@@ -116,6 +117,7 @@ FIELD_VALIDATORS = {
     validate.Equal: handle_equal,
     validate.Length: handle_length,
     validate.OneOf: handle_one_of,
+    validate.ContainsOnly: handle_any_of,
     validate.Range: handle_range,
     validate.Regexp: handle_regexp,
 }
