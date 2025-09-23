@@ -7,6 +7,7 @@ from marshmallow_enum import EnumField
 from marshmallow_union import Union
 
 from marshmallow_jsonschema import JSONSchema, UnsupportedValueError
+
 from . import UserSchema, validate_and_dump
 
 
@@ -15,9 +16,7 @@ def test_equal_validator():
 
     dumped = validate_and_dump(schema)
 
-    assert dumped["definitions"]["UserSchema"]["properties"]["is_user"]["enum"] == [
-        True
-    ]
+    assert dumped["definitions"]["UserSchema"]["properties"]["is_user"]["enum"] == [True]
 
 
 def test_length_validator():
@@ -82,9 +81,7 @@ def test_one_of_empty_enum():
 
 def test_range():
     class TestSchema(Schema):
-        foo = fields.Integer(
-            validate=Range(min=1, min_inclusive=False, max=3, max_inclusive=False)
-        )
+        foo = fields.Integer(validate=Range(min=1, min_inclusive=False, max=3, max_inclusive=False))
         bar = fields.Integer(validate=Range(min=2, max=4))
 
     schema = TestSchema()
@@ -153,7 +150,7 @@ def test_regexp_error():
     schema = TestSchema()
 
     with pytest.raises(UnsupportedValueError):
-        dumped = validate_and_dump(schema)
+        validate_and_dump(schema)
 
 
 def test_custom_validator():
@@ -192,6 +189,7 @@ def test_union():
     """
     Tests whether JSONSchemas can be created using the Union type in marshmallow_union.
     """
+
     class TestSchema(Schema):
         foo = Union([fields.String(), fields.Integer()])
 

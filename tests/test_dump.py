@@ -1,14 +1,23 @@
 import uuid
+from dataclasses import dataclass
 from enum import Enum
 
 import pytest
 from marshmallow import Schema, fields, validate
-from marshmallow_enum import EnumField
-from marshmallow_union import Union
-from dataclasses import dataclass
 from marshmallow_dataclass import class_schema
+from marshmallow_enum import EnumField as MarshmallowEnumEnumField
+from marshmallow_union import Union
+
+import marshmallow_jsonschema
 from marshmallow_jsonschema import JSONSchema, UnsupportedValueError
+
 from . import UserSchema, validate_and_dump
+
+TEST_MARSHMALLOW_NATIVE_ENUM = marshmallow_jsonschema.base.marshmallow_version_supports_native_enums()
+try:
+    from marshmallow.fields import Enum as MarshmallowNativeEnumField
+except ImportError:
+    assert TEST_MARSHMALLOW_NATIVE_ENUM is False
 
 
 def test_dump_schema():
@@ -19,7 +28,7 @@ def test_dump_schema():
     assert len(schema.fields) > 1
 
     props = dumped["definitions"]["UserSchema"]["properties"]
-    for field_name, field in schema.fields.items():
+    for field_name in schema.fields:
         assert field_name in props
 
 
@@ -98,9 +107,7 @@ def test_nested_descriptions():
         yourfield = fields.Integer(required=True)
 
     class TestSchema(Schema):
-        nested = fields.Nested(
-            TestNestedSchema, metadata={"description": "Nested 1", "title": "Title1"}
-        )
+        nested = fields.Nested(TestNestedSchema, metadata={"description": "Nested 1", "title": "Title1"})
         yourfield_nested = fields.Integer(required=True)
 
     schema = TestSchema()
@@ -156,8 +163,10 @@ def test_nested_context():
     nested_show = dumped_show["definitions"]["TestNestedSchema"]["properties"]
     nested_hide = dumped_hide["definitions"]["TestNestedSchema"]["properties"]
 
-    assert "bar" in nested_show and "foo" in nested_show
-    assert "bar" in nested_hide and "foo" not in nested_hide
+    assert "bar" in nested_show
+    assert "foo" in nested_show
+    assert "bar" in nested_hide
+    assert "foo" not in nested_hide
 
 
 def test_list():
@@ -392,12 +401,8 @@ def test_function():
     """Function fields can be serialised if type is given."""
 
     class FnSchema(Schema):
-        fn_str = fields.Function(
-            lambda: "string", required=True, _jsonschema_type_mapping={"type": "string"}
-        )
-        fn_int = fields.Function(
-            lambda: 123, required=True, _jsonschema_type_mapping={"type": "number"}
-        )
+        fn_str = fields.Function(lambda: "string", required=True, _jsonschema_type_mapping={"type": "string"})
+        fn_int = fields.Function(lambda: 123, required=True, _jsonschema_type_mapping={"type": "number"})
 
     schema = FnSchema()
 
@@ -432,15 +437,12 @@ def test_title():
 
     dumped = validate_and_dump(schema)
 
-    assert (
-        dumped["definitions"]["TestSchema"]["properties"]["myfield"]["title"]
-        == "Brown Cowzz"
-    )
+    assert dumped["definitions"]["TestSchema"]["properties"]["myfield"]["title"] == "Brown Cowzz"
 
 
 def test_unknown_typed_field_throws_valueerror():
     class Invalid(fields.Field):
-        def _serialize(self, value, attr, obj):
+        def _serialize(self, value, _attr, _obj):
             return value
 
     class UserSchema(Schema):
@@ -458,12 +460,9 @@ def test_unknown_typed_field():
         def _jsonschema_type_mapping(self):
             return {"type": "string"}
 
-        def _serialize(self, value, attr, obj):
+        def _serialize(self, value, _attr, _obj):
             r, g, b = value
-            r = hex(r)[2:]
-            g = hex(g)[2:]
-            b = hex(b)[2:]
-            return "#" + r + g + b
+            return f"#{r:x}{g:x}{b:x}"
 
     class UserSchema(Schema):
         name = fields.String(required=True)
@@ -473,9 +472,7 @@ def test_unknown_typed_field():
 
     dumped = validate_and_dump(schema)
 
-    assert dumped["definitions"]["UserSchema"]["properties"]["favourite_colour"] == {
-        "type": "string"
-    }
+    assert dumped["definitions"]["UserSchema"]["properties"]["favourite_colour"] == {"type": "string"}
 
 
 def test_field_subclass():
@@ -547,17 +544,15 @@ def test_dumps_iterable_enums():
     mapping = {"a": 0, "b": 1, "c": 2}
 
     class TestSchema(Schema):
-        foo = fields.Integer(
-            validate=validate.OneOf(mapping.values(), labels=mapping.keys())
-        )
+        foo = fields.Integer(validate=validate.OneOf(mapping.values(), labels=mapping.keys()))
 
     schema = TestSchema()
 
     dumped = validate_and_dump(schema)
 
     assert dumped["definitions"]["TestSchema"]["properties"]["foo"] == {
-        "enum": [v for v in mapping.values()],
-        "enumNames": [k for k in mapping.keys()],
+        "enum": list(mapping.values()),
+        "enumNames": list(mapping.keys()),
         "title": "foo",
         "type": "integer",
     }
@@ -584,7 +579,7 @@ def test_required_uses_data_key():
 
     test_schema_definition = dumped["definitions"]["TestSchema"]
     assert "opt" in test_schema_definition["properties"]
-    assert "optional_value" == test_schema_definition["properties"]["opt"]["title"]
+    assert test_schema_definition["properties"]["opt"]["title"] == "optional_value"
     assert "required" in test_schema_definition
     assert "opt" in test_schema_definition["required"]
 
@@ -634,8 +629,7 @@ def test_sorting_properties():
     data = json_schema.dump(schema)
 
     sorted_keys = sorted(data["definitions"]["TestSchema"]["properties"].keys())
-    properties_names = [k for k in sorted_keys]
-    assert properties_names == ["a", "c", "d"]
+    assert list(sorted_keys) == ["a", "c", "d"]
 
     # Should be saving ordering of fields
     schema = TestSchema()
@@ -644,19 +638,18 @@ def test_sorting_properties():
     data = json_schema.dump(schema)
 
     keys = data["definitions"]["TestSchema"]["properties"].keys()
-    properties_names = [k for k in keys]
 
-    assert properties_names == ["d", "c", "a"]
+    assert list(keys) == ["d", "c", "a"]
 
 
-def test_enum_based():
+def test_marshmallow_enum_enum_based():
     class TestEnum(Enum):
         value_1 = 0
         value_2 = 1
         value_3 = 2
 
     class TestSchema(Schema):
-        enum_prop = EnumField(TestEnum)
+        enum_prop = MarshmallowEnumEnumField(TestEnum)
 
     # Should be sorting of fields
     schema = TestSchema()
@@ -664,23 +657,63 @@ def test_enum_based():
     json_schema = JSONSchema()
     data = json_schema.dump(schema)
 
-    assert (
-        data["definitions"]["TestSchema"]["properties"]["enum_prop"]["type"] == "string"
-    )
-    received_enum_values = sorted(
-        data["definitions"]["TestSchema"]["properties"]["enum_prop"]["enum"]
-    )
+    assert data["definitions"]["TestSchema"]["properties"]["enum_prop"]["type"] == "string"
+    received_enum_values = sorted(data["definitions"]["TestSchema"]["properties"]["enum_prop"]["enum"])
     assert received_enum_values == ["value_1", "value_2", "value_3"]
 
 
-def test_enum_based_load_dump_value():
+def test_native_marshmallow_enum_based():
+    if not TEST_MARSHMALLOW_NATIVE_ENUM:
+        return
+
     class TestEnum(Enum):
         value_1 = 0
         value_2 = 1
         value_3 = 2
 
     class TestSchema(Schema):
-        enum_prop = EnumField(TestEnum, by_value=True)
+        enum_prop = MarshmallowNativeEnumField(TestEnum)
+
+    # Should be sorting of fields
+    schema = TestSchema()
+
+    json_schema = JSONSchema()
+    data = json_schema.dump(schema)
+
+    assert data["definitions"]["TestSchema"]["properties"]["enum_prop"]["type"] == "string"
+    received_enum_values = sorted(data["definitions"]["TestSchema"]["properties"]["enum_prop"]["enum"])
+    assert received_enum_values == ["value_1", "value_2", "value_3"]
+
+
+def test_marshmallow_enum_enum_based_load_dump_value():
+    class TestEnum(Enum):
+        value_1 = 0
+        value_2 = 1
+        value_3 = 2
+
+    class TestSchema(Schema):
+        enum_prop = MarshmallowEnumEnumField(TestEnum, by_value=True)
+
+    # Should be sorting of fields
+    schema = TestSchema()
+
+    json_schema = JSONSchema()
+
+    with pytest.raises(NotImplementedError):
+        validate_and_dump(json_schema.dump(schema))
+
+
+def test_native_marshmallow_enum_based_load_dump_value():
+    if not TEST_MARSHMALLOW_NATIVE_ENUM:
+        return
+
+    class TestEnum(Enum):
+        value_1 = 0
+        value_2 = 1
+        value_3 = 2
+
+    class TestSchema(Schema):
+        enum_prop = MarshmallowNativeEnumField(TestEnum, by_value=True)
 
     # Should be sorting of fields
     schema = TestSchema()
@@ -697,9 +730,7 @@ def test_union_based():
         field_2 = fields.Integer()
 
     class TestSchema(Schema):
-        union_prop = Union(
-            [fields.String(), fields.Integer(), fields.Nested(TestNestedSchema)]
-        )
+        union_prop = Union([fields.String(), fields.Integer(), fields.Nested(TestNestedSchema)])
 
     # Should be sorting of fields
     schema = TestSchema()
@@ -726,24 +757,13 @@ def test_union_based():
         "additionalProperties": False,
     }
 
-    assert (
-        string_schema
-        in data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]
-    )
-    assert (
-        integer_schema
-        in data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]
-    )
-    assert (
-        referenced_nested_schema
-        in data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]
-    )
+    assert string_schema in data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]
+    assert integer_schema in data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]
+    assert referenced_nested_schema in data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]
 
     assert data["definitions"]["TestNestedSchema"] == actual_nested_schema
     # Expect three possible schemas for the union type
-    assert (
-        len(data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]) == 3
-    )
+    assert len(data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]) == 3
 
 
 def test_dumping_recursive_schema():
@@ -764,9 +784,7 @@ def test_dumping_recursive_schema():
             # or you can use a lambda (as suggested in the marshmallow docs)
             nested_mwe_recursive = fields.Nested(lambda: RecursiveSchema())
 
-        return json_schema.dump(
-            RecursiveSchema()
-        )  # this shall _not_ raise an AttributeError
+        return json_schema.dump(RecursiveSchema())  # this shall _not_ raise an AttributeError
 
     lambda_schema = generate_recursive_schema_with_lambda()
     name_schema = generate_recursive_schema_with_name()
@@ -775,7 +793,8 @@ def test_dumping_recursive_schema():
 
 def test_basic_dataclass():
     """
-    Tests whether a dataclass (using @dataclass) can be transformed into a jsonschema using marshmallow-dataclass and JSONSchema.dump()
+    Tests whether a dataclass (using @dataclass) can be transformed into a jsonschema
+    using marshmallow-dataclass and JSONSchema.dump()
     """
     expected_data = {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -813,7 +832,8 @@ def test_basic_dataclass():
 
 def test_union_dataclass():
     """
-    Tests whether a dataclass with a variable with a union type (e.g. int | str) translates well through JSONSchema.dump()
+    Tests whether a dataclass with a variable with a union type (e.g. int | str)
+    translates well through JSONSchema.dump()
     """
     expected_data = {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -843,11 +863,13 @@ def test_union_dataclass():
     data = json_schema.dump(marshmallow_dataclass)
     assert data == expected_data
 
+
 def test_nested_dataclass():
     """
     Tests whether a dataclass with an internally defined dataclass translates well through JSONSchema.dump(), meaning
     both dataclasses should come out the other side.
     """
+
     @dataclass
     class SubDataClass:
         foo: int
@@ -861,10 +883,15 @@ def test_nested_dataclass():
     marshmallow_dataclass = class_schema(TestDataClass)()
     data = JSONSchema().dump(marshmallow_dataclass)
 
-    assert data['definitions']['SubDataClass']['type'] == 'object'
-    assert data['definitions']['SubDataClass']['properties']['bar']['items'] == {'anyOf': [{'title': 'bar', 'type': 'integer'}, {'title': 'bar', 'type': 'string'}]}
-    assert data['definitions']['SubDataClass']['properties']['foo'] == {'title': 'foo', 'type': 'integer'}
-    assert data['definitions']['TestDataClass']['type'] == 'object'
-    assert data['definitions']['TestDataClass']['properties']['other'] == {'title': 'other', 'type': 'string'}
-    assert data['definitions']['TestDataClass']['properties']['subclass'] == {'type': 'object', '$ref': '#/definitions/SubDataClass'}
-    assert data['definitions']['TestDataClass']['required'] == ['other', 'subclass']
+    assert data["definitions"]["SubDataClass"]["type"] == "object"
+    assert data["definitions"]["SubDataClass"]["properties"]["bar"]["items"] == {
+        "anyOf": [{"title": "bar", "type": "integer"}, {"title": "bar", "type": "string"}]
+    }
+    assert data["definitions"]["SubDataClass"]["properties"]["foo"] == {"title": "foo", "type": "integer"}
+    assert data["definitions"]["TestDataClass"]["type"] == "object"
+    assert data["definitions"]["TestDataClass"]["properties"]["other"] == {"title": "other", "type": "string"}
+    assert data["definitions"]["TestDataClass"]["properties"]["subclass"] == {
+        "type": "object",
+        "$ref": "#/definitions/SubDataClass",
+    }
+    assert data["definitions"]["TestDataClass"]["required"] == ["other", "subclass"]
