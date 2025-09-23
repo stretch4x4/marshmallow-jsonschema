@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "marshmallow-jsonschema"
-version = "0.15.0.dev0"
+version = "0.15.1.dev0"
 description = "Formatting marshmallow schemas as JSON Schema Draft v7 (http://json-schema.org/)"
 readme = "README.md"
 license = "MIT"
@@ -54,7 +54,7 @@ Homepage = "https://github.com/stretch4x4/marshmallow-jsonschema"
 Documentation = "https://github.com/stretch4x4/marshmallow-jsonschema/blob/master/README.md"
 Repository = "https://github.com/stretch4x4/marshmallow-jsonschema.git"
 Issues = "https://github.com/stretch4x4/marshmallow-jsonschema/issues"
-Changelog = "https://github.com/stretch4x4/marshmallow-jsonschema/blob/master/CHANGES"
+Changelog = "https://github.com/stretch4x4/marshmallow-jsonschema/blob/master/ReleaseNotes.rst"
 
 [dependency-groups]
 dev = [
@@ -110,3 +110,67 @@ ignore = [
     "S104",  # Possible binding to all interfaces
     "E501", # Line too long
 ]
+
+[tool.towncrier]
+directory = "unreleased_notes"
+filename = "ReleaseNotes.rst"
+title_format = "v{version} - {project_date}"
+issue_format = "`{issue} <https://github.com/stretch4x4/marshmallow-jsonschema/issues/{issue}>`_"
+
+[[tool.towncrier.type]]
+directory = "breaking"
+name = "Incompatible Changes"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "deprecation"
+name = "Deprecations"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "feature"
+name = "Features"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "bugfix"
+name = "Bugfixes"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "refactor"
+name = "Refactoring"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "doc"
+name = "Improved Documentation"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "build"
+name = "Build and Packaging"
+showcontent = true
+
+[tool.bumpversion]
+current_version = "0.15.1.dev0"
+commit = false
+tag = false
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(\\.(?P<release>dev)(?P<dev>\\d+))?"
+serialize = [
+    "{major}.{minor}.{patch}.{release}{dev}",
+    "{major}.{minor}.{patch}",
+]
+pre_commit_hooks = [
+    "uv lock",
+    "git add uv.lock",
+] # this is a bump-my-version invocation unrelated to the pre-commit tool
+
+[tool.bumpversion.parts.release]
+optional_value = "release"
+values = ["dev", "release"]
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'

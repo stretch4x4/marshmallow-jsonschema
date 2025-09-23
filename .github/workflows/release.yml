@@ -1,39 +1,103 @@
-# This workflow is mostly copied from the official PyPA guide:
-# https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/
-#
-# Note: There are improvements that could be made to streamline the release process further such as integrating helpers
-#       like bump-my-version and towncrier
-#
 # Instructions:
 #
-# 1. Finalise development on the master branch
-# 2. Update the version number in pyproject.toml appropriately
-# 3. Commit `git commit -m "vx.x.x release"`
-# 4. Tag `git tag vx.x.x`
-# 5. Push `git push && git push --tags`
-# 6. This workflow will automatically be triggered in GitHub Actions based on the new tag
-# 7. Update the version number in pyproject.toml again to a development version e.g. v1.2.3.dev0
-# 8. Commit `git commit -m "Update version number between releases"`
-# 9. Push `git push`
-name: Publish Python 🐍 distribution 📦 to GitHub Releases and PyPI
+# 1. Finalise development on the master branch (merge all desired PRs etc)
+# 2. Navigate to the GitHub Actions UI and select the Release workflow
+#    https://github.com/kyluca/marshmallow-jsonschema/actions/workflows/release.yml
+# 3. Select "Run workflow"
+#
+# TODO: Support pre-releases and alpha/beta deployments from branches other than master
+name: Release 🚀
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  workflow_dispatch:
+
+env:
+  BUMPVERSION_VERSION: "1.2.3"
+  PYTHON_VERSION: "3.10"
+  TOWNCRIER_VERSION: "25.8.0"
+  UV_VERSION: "0.8.18"
 
 jobs:
-  build:
-    name: Build distribution 📦
+  bump_version_and_notes:
+    name: Finalise the release notes and bump the version
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to push back to the repo
+    outputs:
+      release_version: ${{ steps.release_notes.outputs.release_version }}
 
     steps:
     - uses: actions/checkout@v5
     - name: Set up Python
       uses: astral-sh/setup-uv@v6
       with:
-        version: "0.8.18"
-        python-version: "3.10"
+        version: ${{ env.UV_VERSION }}
+        python-version: ${{ env.PYTHON_VERSION }}
+    - name: Validate initial version
+      shell: bash
+      run: |
+        # Validate that we're starting the process from a dev version, otherwise fail the workflow
+        current_version=`uvx bump-my-version@${{ env.BUMPVERSION_VERSION }} show current_version 2>/dev/null`
+        if [[ ${current_version} != *".dev"* ]]; then
+          echo "Non-dev version detected, please verify repo state manually: ${current_version}"
+          exit 1
+        fi
+    - name: Determine the semantic version bump type required
+      id: determine_bump
+      shell: bash
+      run: |
+        breaking=`ls -1 unreleased_notes/*.breaking 2>/dev/null | wc -l`
+        feature=`ls -1 unreleased_notes/*.feature 2>/dev/null | wc -l`
+        if [ ${breaking} != 0 ]; then
+          bump_type="major"
+        elif [ ${feature} != 0 ]; then
+          bump_type="minor"
+        else
+          bump_type="patch"
+        fi
+        echo "bump_type=${bump_type}" >> $GITHUB_OUTPUT
+    - name: Bump to prepare the new version
+      # e.g. 1.2.3.dev0
+      id: prebump
+      # Only perform a major or minor bump, as the patch version should already be bumped after the previous release
+      if: contains(fromJSON('["major", "minor"]'), steps.determine_bump.outputs.bump_type)
+      run: uvx bump-my-version@${{ env.BUMPVERSION_VERSION }} bump ${{ steps.determine_bump.outputs.bump_type }}
+    - name: Finalise release notes
+      id: release_notes
+      run: |
+        release_version=`uvx bump-my-version@${{ env.BUMPVERSION_VERSION }} show-bump --ascii | grep release | grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" 2>/dev/null`
+        uvx towncrier@${{ env.TOWNCRIER_VERSION }} --yes --version ${release_version}
+        echo "release_version=${release_version}" >> $GITHUB_OUTPUT
+    - name: Bump to the release version
+      # e.g. 1.2.3
+      run: uvx bump-my-version@${{ env.BUMPVERSION_VERSION }} bump --allow-dirty --commit --tag release
+    - name: Push changes
+      uses: ad-m/github-push-action@v1
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}
+        tags: true
+    - name: Store the release notes
+      uses: actions/upload-artifact@v4
+      with:
+        name: release_notes
+        path: ReleaseNotes.rst
+
+  build:
+    name: Build distribution 📦
+    needs:
+    - bump_version_and_notes
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        ref: ${{needs.bump_version_and_notes.outputs.release_version}}
+    - name: Set up Python
+      uses: astral-sh/setup-uv@v6
+      with:
+        version: ${{ env.UV_VERSION }}
+        python-version: ${{ env.PYTHON_VERSION }}
     - name: Build a binary wheel and a source tarball
       run: uv build
     - name: Store the distribution packages
@@ -45,6 +109,7 @@ jobs:
   publish-to-gh:
     name: Publish GitHub release 📖
     needs:
+    - bump_version_and_notes
     - build
     runs-on: ubuntu-latest
 
@@ -55,10 +120,15 @@ jobs:
       with:
         name: python-package-distributions
         path: dist/
+    - name: Download the release notes
+      uses: actions/download-artifact@v4
+      with:
+        name: release_notes
+        path: ReleaseNotes.rst
     - name: Create GitHub Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release create ${{ github.ref_name }} --title ${{ github.ref_name }} --generate-notes dist/*
+      run: gh release create ${{needs.bump_version_and_notes.outputs.release_version}} --title ${{needs.bump_version_and_notes.outputs.release_version}} -F ReleaseNotes.rst dist/*
 
   publish-to-pypi:
     # Temporarily disabling this job until we take ownership of the project on PyPI or rename this fork
@@ -69,9 +139,9 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/<package-name>  # Replace <package-name> with your PyPI project name
+      url: https://pypi.org/p/marshmallow-jsonschema
     permissions:
-      id-token: write  # IMPORTANT: mandatory for trusted publishing
+      id-token: write  # Required for trusted publishing
 
     steps:
     - name: Download all the dists
@@ -79,5 +149,28 @@ jobs:
       with:
         name: python-package-distributions
         path: dist/
+    # TODO: Can replace the below with `uv publish` once tested
     - name: Publish distribution to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
+
+  bump_dev_version:
+    name: Bump to the next patch development version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to push back to the repo
+
+    steps:
+    - uses: actions/checkout@v5
+    - name: Set up Python
+      uses: astral-sh/setup-uv@v6
+      with:
+        version: ${{ env.UV_VERSION }}
+        python-version: ${{ env.PYTHON_VERSION }}
+    - name: Bump to start the next dev version
+      # e.g. 1.2.4.dev0
+      run: uvx bump-my-version@${{ env.BUMPVERSION_VERSION }} bump --allow-dirty --commit patch
+    - name: Push changes
+      uses: ad-m/github-push-action@v1
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}

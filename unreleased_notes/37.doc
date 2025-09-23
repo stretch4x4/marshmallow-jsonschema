@@ -1,0 +1,3 @@
+Adopted [towncrier](https://github.com/twisted/towncrier) for managing release notes.
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for more details.
