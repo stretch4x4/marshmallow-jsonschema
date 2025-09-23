@@ -186,11 +186,14 @@ def test_enum():
 
 
 def test_union():
+    """
+    Tests whether JSONSchemas can be created using the Union type in marshmallow_union.
+    """
+
     class TestSchema(Schema):
         foo = Union([fields.String(), fields.Integer()])
 
     schema = TestSchema()
-
     dumped = validate_and_dump(schema)
 
     foo_property = dumped["definitions"]["TestSchema"]["properties"]["foo"]

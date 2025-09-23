@@ -1,8 +1,10 @@
 import uuid
+from dataclasses import dataclass
 from enum import Enum
 
 import pytest
 from marshmallow import Schema, fields, validate
+from marshmallow_dataclass import class_schema
 from marshmallow_enum import EnumField as MarshmallowEnumEnumField
 from marshmallow_union import Union
 
@@ -760,7 +762,6 @@ def test_union_based():
     assert referenced_nested_schema in data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]
 
     assert data["definitions"]["TestNestedSchema"] == actual_nested_schema
-
     # Expect three possible schemas for the union type
     assert len(data["definitions"]["TestSchema"]["properties"]["union_prop"]["anyOf"]) == 3
 
@@ -788,3 +789,109 @@ def test_dumping_recursive_schema():
     lambda_schema = generate_recursive_schema_with_lambda()
     name_schema = generate_recursive_schema_with_name()
     assert lambda_schema == name_schema
+
+
+def test_basic_dataclass():
+    """
+    Tests whether a dataclass (using @dataclass) can be transformed into a jsonschema
+    using marshmallow-dataclass and JSONSchema.dump()
+    """
+    expected_data = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "definitions": {
+            "TestDataClass": {
+                "properties": {
+                    "field_1": {"title": "field_1", "type": "integer"},
+                    "field_2": {"title": "field_2", "type": "string"},
+                    "field_3": {
+                        "title": "field_3",
+                        "type": "array",
+                        "items": {"title": "field_3", "type": "string"},
+                    },
+                },
+                "type": "object",
+                "required": ["field_1", "field_2", "field_3"],
+                "additionalProperties": False,
+            }
+        },
+        "$ref": "#/definitions/TestDataClass",
+    }
+    json_schema = JSONSchema()
+
+    @dataclass
+    class TestDataClass:
+        field_1: int
+        field_2: str
+        field_3: list[str]
+
+    marshmallow_dataclass = class_schema(TestDataClass)()
+
+    data = json_schema.dump(marshmallow_dataclass)
+    assert data == expected_data
+
+
+def test_union_dataclass():
+    """
+    Tests whether a dataclass with a variable with a union type (e.g. int | str)
+    translates well through JSONSchema.dump()
+    """
+    expected_data = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "definitions": {
+            "TestDataClass": {
+                "properties": {
+                    "field_1": {
+                        "anyOf": [
+                            {"title": "field_1", "type": "integer"},
+                            {"title": "field_1", "type": "string"},
+                        ]
+                    }
+                },
+                "type": "object",
+                "additionalProperties": False,
+            }
+        },
+        "$ref": "#/definitions/TestDataClass",
+    }
+    json_schema = JSONSchema()
+
+    @dataclass
+    class TestDataClass:
+        field_1: int | str | None
+
+    marshmallow_dataclass = class_schema(TestDataClass)()
+    data = json_schema.dump(marshmallow_dataclass)
+    assert data == expected_data
+
+
+def test_nested_dataclass():
+    """
+    Tests whether a dataclass with an internally defined dataclass translates well through JSONSchema.dump(), meaning
+    both dataclasses should come out the other side.
+    """
+
+    @dataclass
+    class SubDataClass:
+        foo: int
+        bar: list[int | str]
+
+    @dataclass
+    class TestDataClass:
+        subclass: SubDataClass
+        other: str
+
+    marshmallow_dataclass = class_schema(TestDataClass)()
+    data = JSONSchema().dump(marshmallow_dataclass)
+
+    assert data["definitions"]["SubDataClass"]["type"] == "object"
+    assert data["definitions"]["SubDataClass"]["properties"]["bar"]["items"] == {
+        "anyOf": [{"title": "bar", "type": "integer"}, {"title": "bar", "type": "string"}]
+    }
+    assert data["definitions"]["SubDataClass"]["properties"]["foo"] == {"title": "foo", "type": "integer"}
+    assert data["definitions"]["TestDataClass"]["type"] == "object"
+    assert data["definitions"]["TestDataClass"]["properties"]["other"] == {"title": "other", "type": "string"}
+    assert data["definitions"]["TestDataClass"]["properties"]["subclass"] == {
+        "type": "object",
+        "$ref": "#/definitions/SubDataClass",
+    }
+    assert data["definitions"]["TestDataClass"]["required"] == ["other", "subclass"]
