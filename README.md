@@ -81,7 +81,7 @@ class AthleteSchema(Schema):
     user_schema = fields.Nested(JSONSchema)
     name = fields.String()
 
-    
+
 athlete = Athlete()
 athlete_schema = AthleteSchema()
 
@@ -155,6 +155,48 @@ if __name__ == '__main__':
 ### Advanced usage
 #### Custom Type support
 
+For custom field classes, you can add a mapping to an equivalent python type using the `'jsonschema_python_type'` key inside `metadata`.
+
+If requiring proper schema validation and nesting with custom list-like fields, consider subclassing `fields.List`, or alternatively provide a `self.inner` attribute, set to a field instance representing the type of the items inside the custom list.
+
+Example custom field definitions, using `'jsonschema_python_type'`:
+```python
+class Colour(fields.Field):
+    def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.metadata["jsonschema_python_type"] = str
+
+    def _serialize(self, value, attr, obj):
+        r, g, b = value
+        r = "%02X" % (r,)
+        g = "%02X" % (g,)
+        b = "%02X" % (b,)
+        return '#' + r + g + b
+
+class ColourList(fields.Field):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.metadata["jsonschema_python_type"] = list
+        self.inner = Colour()
+
+class FlexibleType(fields.Field):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        print(f"This is field treated like a {self.metadata['jsonschema_python_type']}")
+
+class UserSchema(Schema):
+        favourite_colour = Colour()
+        close_favourites = ColourList()
+        bool_field = FlexibleType(metadata=("jsonschema_python_type": bool))
+        int_field = FlexibleType(metadata=("jsonschema_python_type": int))
+
+schema = UserSchema()
+json_schema = JSONSchema()
+json_schema.dump(schema)
+```
+
+
+#### (DEPRECATED) Custom Type support
 Simply add a `_jsonschema_type_mapping` method to your field
 so we know how it ought to get serialized to JSON Schema.
 
@@ -175,7 +217,7 @@ class Colour(fields.Field):
         r = "%02X" % (r,)
         g = "%02X" % (g,)
         b = "%02X" % (b,)
-        return '#' + r + g + b 
+        return '#' + r + g + b
 
 class Gender(fields.String):
     def _jsonschema_type_mapping(self):

@@ -1,6 +1,9 @@
+from typing import Any, Iterable, Mapping
 import uuid
 from enum import Enum
 
+from marshmallow.types import Validator
+from marshmallow.utils import missing as missing_
 import pytest
 from marshmallow import Schema, fields, validate
 from marshmallow_enum import EnumField
@@ -789,16 +792,16 @@ def test_dumping_recursive_schema():
     assert lambda_schema == name_schema
 
 
-def test_customfield_metadata_pytype():
+def test_customfield_metadata_jsonschema_python_type():
     """
     Tests that specifying the equivalent pytpe in the metadata works for a custom field, and produces
     same result as using the deprecated _jsonschema_type_mapping function with equivalent json type.
-    "pytpe" should also be excluded from the dumped schema if set in metadata.
+    "jsonschema_python_type" should also be excluded from the dumped schema if set in metadata.
     """
     class CustomFieldPytype(fields.Field):
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
-            self.metadata["pytype"] = str
+            self.metadata["jsonschema_python_type"] = str
 
     class CustomFieldPytype2(fields.Field):
         """This field tests setting pytpe on creation inside UserSchema"""
@@ -810,7 +813,7 @@ def test_customfield_metadata_pytype():
 
     class UserSchema(Schema):
         custom_field_pytpe = CustomFieldPytype()
-        custom_field_pytype2 = CustomFieldPytype2(metadata={"pytype": str})
+        custom_field_pytype2 = CustomFieldPytype2(metadata={"jsonschema_python_type": str})
         custom_field_jsonschema_type = CustomFieldJSONSchemaType()
 
     schema = UserSchema()
@@ -831,7 +834,7 @@ def test_customfield_metadata_pytype():
     }
 
 
-def test_customfield_metadata_pytype_overrides_jsonschema_type():
+def test_customfield_metadata_pytype_mapping_overrides_jsonschema_type_mapping():
     """
     Test that if using pytpe mapping in metadata, that this overwrites the deprecated
     _jsonschema_type_mapping function if also provided.
@@ -839,7 +842,7 @@ def test_customfield_metadata_pytype_overrides_jsonschema_type():
     class CustomField(fields.Field):
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
-            self.metadata["pytype"] = str
+            self.metadata["jsonschema_python_type"] = str
 
         def _jsonschema_type_mapping(self):
             return {"type": "object"}
@@ -911,7 +914,7 @@ def test_custom_list_inner_custom_field():
     class CustomFloat(fields.Field):
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
-            self.metadata["pytype"] = float
+            self.metadata["jsonschema_python_type"] = float
 
     class NestedCustomList(fields.List):
         def __init__(self, **kwargs):
@@ -945,12 +948,12 @@ def test_custom_dict_custom_values():
     class CustomKey(fields.Field):
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
-            self.metadata["pytype"] = str
+            self.metadata["jsonschema_python_type"] = str
 
     class CustomValue(fields.Field):
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
-            self.metadata["pytype"] = int
+            self.metadata["jsonschema_python_type"] = int
 
     class CustomDict(fields.Dict):
         def __init__(self, keys, values, **kwargs):
@@ -978,45 +981,69 @@ def test_custom_dict_custom_values():
     assert all(d == props_list[0] for d in props_list)
 
 
-def test_custom_pytype_list_items_exists():
+def test_custom_jsonschema_python_type_list_items_exists():
     """
-    When a custom fields.Field instance is used with pytype=list or _jsonschema_type_mapping "array",
-    an empty "items" schema should be present
+    When a custom fields.Field instance is used with jsonschema_python_type=list or _jsonschema_type_mapping "array",
+    an empty "items" schema should be present.
+    If an 'inner' attribute is present in a custom list-like field, then this should be used.
     """
+
+    # Custom fields which we want to treat like lists: No inner attribute defined
     class CustomListField(fields.Field):
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
-            self.metadata["pytype"] = list
+            self.metadata["jsonschema_python_type"] = list
 
     class JsonSchemaTypeField(fields.Field):
+        def _jsonschema_type_mapping(self):
+            return {"type": "array"}
+
+    # Custom fields which we want to treat like lists: Inner attribute defined
+    class CustomListFieldWithInner(fields.Field):
+        def __init__(self, inner_field: fields.Field, **kwargs):
+            super().__init__(**kwargs)
+            self.metadata["jsonschema_python_type"] = list
+            self.inner = inner_field
+
+    class JsonSchemaTypeFieldWithInner(fields.Field):
+        def __init__(self, inner_field: fields.Field, **kwargs):
+            super().__init__(**kwargs)
+            self.inner = inner_field
+
         def _jsonschema_type_mapping(self):
             return {"type": "array"}
 
     class UserSchema(Schema):
         custom_field = CustomListField()
         jsonschema_field = JsonSchemaTypeField()
+        custom_field_inner = CustomListFieldWithInner(inner_field=fields.String())
+        jsonschema_field_inner = JsonSchemaTypeFieldWithInner(inner_field=fields.String())
 
     schema = UserSchema()
     dumped = validate_and_dump(schema)
     pytype_prop = dumped["definitions"]["UserSchema"]["properties"]["custom_field"]
     jsonschema_prop = dumped["definitions"]["UserSchema"]["properties"]["jsonschema_field"]
-    props = (pytype_prop, jsonschema_prop)
-    for nested_json in props:
+    pytype_inner_prop = dumped["definitions"]["UserSchema"]["properties"]["custom_field_inner"]
+    jsonschema_inner_prop = dumped["definitions"]["UserSchema"]["properties"]["jsonschema_field_inner"]
+    for nested_json in (pytype_prop, jsonschema_prop):
         assert nested_json["type"] == "array"
         assert "items" in nested_json
-        item_schema = nested_json["items"]
-        assert item_schema == {}
+        assert nested_json["items"] == {}
+    for nested_json in (pytype_inner_prop, jsonschema_inner_prop):
+        assert nested_json["type"] == "array"
+        assert "items" in nested_json
+        assert nested_json["items"] == {'title': '', 'type': 'string'}
 
 
-def test_custom_pytype_dict_additionalproperties_exists():
+def test_custom_jsonschema_python_type_dict_additionalproperties_exists():
     """
-    When a custom fields.Field instance is used with pytype=dict or _jsonschema_type_mapping "object",
+    When a custom fields.Field instance is used with jsonschema_python_type=dict or _jsonschema_type_mapping "object",
     an empty "additionalProperties" schema should be present
     """
     class CustomDictField(fields.Field):
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
-            self.metadata["pytype"] = dict
+            self.metadata["jsonschema_python_type"] = dict
 
     class JsonSchemaTypeField(fields.Field):
         def _jsonschema_type_mapping(self):
