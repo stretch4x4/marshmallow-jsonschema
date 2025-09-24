@@ -78,11 +78,6 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         branch: ${{ github.ref }}
         tags: true
-    - name: Store the release notes
-      uses: actions/upload-artifact@v4
-      with:
-        name: release_notes
-        path: ReleaseNotes.rst
 
   build:
     name: Build distribution 📦
@@ -116,16 +111,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
+      with:
+        ref: ${{needs.bump_version_and_notes.outputs.release_tag}}
     - name: Download all the dists
       uses: actions/download-artifact@v4
       with:
         name: python-package-distributions
         path: dist/
-    - name: Download the release notes
-      uses: actions/download-artifact@v4
-      with:
-        name: release_notes
-        path: ReleaseNotes.rst
     - name: Create GitHub Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -164,6 +156,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
+      with:
+        ref: ${{needs.bump_version_and_notes.outputs.release_tag}}
     - run: |
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
