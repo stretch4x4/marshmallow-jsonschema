@@ -149,6 +149,7 @@ jobs:
   bump_dev_version:
     name: Bump to the next patch development version
     needs:
+    - bump_version_and_notes
     - publish-to-gh
     runs-on: ubuntu-latest
     permissions:
