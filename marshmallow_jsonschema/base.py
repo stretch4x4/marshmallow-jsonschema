@@ -1,3 +1,4 @@
+import builtins
 import datetime
 import decimal
 import typing
@@ -198,7 +199,7 @@ class JSONSchema(Schema):
 
         return required or missing
 
-    def _from_python_type(self, obj, field, pytype) -> dict[str, typing.Any]:
+    def _from_python_type(self, obj, field, pytype: builtins.type) -> dict[str, typing.Any]:
         """Get schema definition from python type."""
         json_schema = {"title": field.attribute or field.name or ""}
 
@@ -232,10 +233,21 @@ class JSONSchema(Schema):
             if isinstance(field, fields.List) or hasattr(field, "inner"):
                 json_schema["items"] = self._get_schema_for_field(obj, field.inner)
             elif isinstance(field, fields.Tuple):
-                warnings.warn(f"Conversion for fields of type 'fields.Tuple' are not currently supported, 'items' will be empty in the schema for '{json_schema['title']}'.", UserWarning, stacklevel=2)
+                warnings.warn(
+                    f"""Conversion for fields of type 'fields.Tuple' are not currently supported, 'items' will be empty
+                      in the schema for '{json_schema["title"]}'.""",
+                    UserWarning,
+                    stacklevel=2,
+                )
                 json_schema["items"] = {}
             else:
-                warnings.warn(f"Cannot determine inner field for custom '{json_schema['title']}' array field, 'items' will be empty in the schema. Consider subclassing 'fields.List', or defining an appropriate 'self.inner' attribute for this custom field.", UserWarning, stacklevel=2)
+                warnings.warn(
+                    f"""Cannot determine inner field for custom '{json_schema["title"]}' array field, 'items' will be
+                      empty in the schema. Consider subclassing 'fields.List', or defining an appropriate 'self.inner'
+                        attribute for this custom field.""",
+                    UserWarning,
+                    stacklevel=2,
+                )
                 json_schema["items"] = {}
 
         if pytype is dict:
@@ -301,7 +313,7 @@ class JSONSchema(Schema):
         msg = f"Field {field} is not a supported Union type."
         raise TypeError(msg)
 
-    def _get_python_type(self, field: fields.Field) -> typing.Type:
+    def _get_python_type(self, field: fields.Field) -> builtins.type:
         """Get python type based on field subclass"""
         if PYTYPE_KEY in field.metadata:
             return field.metadata[PYTYPE_KEY]
@@ -313,9 +325,16 @@ class JSONSchema(Schema):
         msg = f"unsupported field type {field!s}"
         raise UnsupportedValueError(msg)
 
-    def _from_custom_field_type(self, obj, field: fields.Field, type_mapping: dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
+    def _from_custom_field_type(
+        self, obj, field: fields.Field, type_mapping: dict[str, typing.Any]
+    ) -> dict[str, typing.Any]:
         """(DEPRECATED) Get schema definition for a custom field."""
-        warnings.warn("Use of the '_jsonschema_type_mapping' method is deprecated. For custom field support, consider specifying the equivalent python type instead, using the 'jsonschema_python_type' key in metadata.", DeprecationWarning, stacklevel=2)
+        warnings.warn(
+            """Use of the '_jsonschema_type_mapping' method is deprecated. For custom field support, consider specifying
+              the equivalent python type instead, using the 'jsonschema_python_type' key in metadata.""",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         json_schema = type_mapping
 
         json_schema["title"] = field.attribute or field.name or ""
@@ -348,7 +367,13 @@ class JSONSchema(Schema):
             if isinstance(field, fields.List) or hasattr(field, "inner"):
                 json_schema["items"] = self._get_schema_for_field(obj, field.inner)
             else:
-                warnings.warn(f"Cannot determine inner field for custom '{json_schema['title']}' array field, 'items' will be empty in the schema. Consider subclassing 'fields.List', or defining an appropriate 'self.inner' attribute for this custom field.", UserWarning, stacklevel=2)
+                warnings.warn(
+                    f"""Cannot determine inner field for custom '{json_schema["title"]}' array field, 'items' will be\
+                        empty in the schema. Consider subclassing 'fields.List', or defining an appropriate 'self.inner'
+                          attribute for this custom field.""",
+                    UserWarning,
+                    stacklevel=2,
+                )
                 json_schema["items"] = {}
 
         if "object" in json_schema["type"]:
@@ -361,8 +386,8 @@ class JSONSchema(Schema):
 
     def _get_value_from_obj_or_metadata(self, field: fields.Field, attr: str) -> None | typing.Any:
         """
-        Helper function to search for and return an attribute. First checks for a direct attribute, then checks in metadata.
-        If the attribute value is a function, run and return the function output.
+        Helper function to search for and return an attribute. First checks for a direct attribute, then checks in
+        metadata. If the attribute value is a function, run and return the function output.
         Returns None if the attribute is not found in either location.
         """
         if hasattr(field, attr):
