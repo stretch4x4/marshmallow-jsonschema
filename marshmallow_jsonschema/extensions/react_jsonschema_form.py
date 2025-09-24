@@ -41,14 +41,13 @@ class ReactJsonSchemaFormJSONSchema(JSONSchema):
         """
         return dict(self._dump_uischema_iter(obj, *args, many=many))
 
-    def _dump_uischema_iter(self, obj, many=None, *args):
+    def _dump_uischema_iter(self, obj, many=None, *args):  # noqa: ARG002 - unused arguments to match signature
         """
         This is simply implementing a Dictionary Iterator for
         ReactJsonSchemaFormJSONSchema.dump_uischema
         """
 
-        for k, v in getattr(obj.Meta, "react_uischema_extra", {}).items():
-            yield k, v
+        yield from getattr(obj.Meta, "react_uischema_extra", {}).items()
 
         for field_name, field in obj.fields.items():
             # NOTE: doubled up to maintain backwards compatibility

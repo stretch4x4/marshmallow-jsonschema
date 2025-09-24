@@ -1,27 +1,48 @@
-## marshmallow-jsonschema: JSON Schema formatting with marshmallow
+# marshmallow-jsonschema
 
-![Build Status](https://github.com/fuhrysteve/marshmallow-jsonschema/workflows/build/badge.svg)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
+> **NOTE**
+>
+> This is a maintained refactor of the original [marshmallow-jsonschema project](https://github.com/fuhrysteve/marshmallow-jsonschema).
+>
+> The main goals of this refactor were:
+>
+> - Fix some long standing bugs
+> - Support newer versions of Python
+> - Publish a more recent release
+> - Modernise builds and tooling to enable active development and future work
+
+## Overview
+
+<!--- TODO: re-enable the following badge once we split coverage and testing - put after testing --->
+<!--- ![Coverage]&#40;https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/pytest_and_coverage.yml/badge.svg&#41;) --->
+![Build Status](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/pytest_and_coverage.yml/badge.svg)
+[![CodeQL](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/codeql-analysis.yml)
+[![OSSAR](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/ossar-analysis.yml/badge.svg)](https://github.com/stretch4x4/marshmallow-jsonschema/actions/workflows/ossar-analysis.yml)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+![PyPI - Version](https://img.shields.io/pypi/v/marshmallow-jsonschema)
+![GitHub Release](https://img.shields.io/github/v/release/stretch4x4/marshmallow-jsonschema)
+
 
  marshmallow-jsonschema translates marshmallow schemas into
  JSON Schema Draft v7 compliant jsonschema. See http://json-schema.org/
 
-#### Why would I want my schema translated to JSON?
+### Why would I want my schema translated to JSON?
 
 What are the use cases for this? Let's say you have a
 marshmallow schema in python, but you want to render your
 schema as a form in another system (for example: a web browser
 or mobile device).
 
-#### Installation
+## Installation
 
-Requires python>=3.6 and marshmallow>=3.11. (For python 2 & marshmallow 2 support, please use marshmallow-jsonschema<0.11)
+Requires python>=3.10 and marshmallow>=3.11. (For python 2 & marshmallow 2 support, please use
+marshmallow-jsonschema<0.11)
 
 ```
 pip install marshmallow-jsonschema
 ```
 
-#### Some Client tools can render forms using JSON Schema
+## Some Client tools can render forms using JSON Schema
 
 * [react-jsonschema-form](https://github.com/mozilla-services/react-jsonschema-form) (recommended)
   * See below extension for this excellent library!
@@ -29,9 +50,9 @@ pip install marshmallow-jsonschema
 * https://github.com/jdorn/json-editor
 * https://github.com/ulion/jsonform
 
-### Examples
+## Examples
 
-#### Simple Example
+### Simple Example
 
 ```python
 from marshmallow import Schema, fields
@@ -62,7 +83,7 @@ Yields:
  'type': 'object'}
 ```
 
-#### Nested Example
+### Nested Example
 
 ```python
 from marshmallow import Schema, fields
@@ -88,7 +109,7 @@ athlete_schema = AthleteSchema()
 athlete_schema.dump(athlete)
 ```
 
-#### Complete example Flask application using brutisin/json-forms
+### Complete example Flask application using brutisin/json-forms
 
 ![Screenshot](http://i.imgur.com/jJv1wFk.png)
 
@@ -152,8 +173,8 @@ if __name__ == '__main__':
 ```
 
 
-### Advanced usage
-#### Custom Type support
+## Advanced usage
+### Custom Type support
 
 For custom field classes, you can add a mapping to an equivalent python type using the `'jsonschema_python_type'` key inside `metadata`.
 
@@ -277,3 +298,4 @@ data = json_schema_obj.dump(schema)
 
 # ..and here's your uiSchema!
 ui_schema_json = json_schema_obj.dump_uischema(schema)
+```

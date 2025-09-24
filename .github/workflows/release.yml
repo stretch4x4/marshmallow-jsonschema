@@ -1,0 +1,83 @@
+# This workflow is mostly copied from the official PyPA guide:
+# https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/
+#
+# Note: There are improvements that could be made to streamline the release process further such as integrating helpers
+#       like bump-my-version and towncrier
+#
+# Instructions:
+#
+# 1. Finalise development on the master branch
+# 2. Update the version number in pyproject.toml appropriately
+# 3. Commit `git commit -m "vx.x.x release"`
+# 4. Tag `git tag vx.x.x`
+# 5. Push `git push && git push --tags`
+# 6. This workflow will automatically be triggered in GitHub Actions based on the new tag
+# 7. Update the version number in pyproject.toml again to a development version e.g. v1.2.3.dev0
+# 8. Commit `git commit -m "Update version number between releases"`
+# 9. Push `git push`
+name: Publish Python 🐍 distribution 📦 to GitHub Releases and PyPI
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    name: Build distribution 📦
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v5
+    - name: Set up Python
+      uses: astral-sh/setup-uv@v6
+      with:
+        version: "0.8.18"
+        python-version: "3.10"
+    - name: Build a binary wheel and a source tarball
+      run: uv build
+    - name: Store the distribution packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+
+  publish-to-gh:
+    name: Publish GitHub release 📖
+    needs:
+    - build
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v5
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Create GitHub Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: gh release create ${{ github.ref_name }} --title ${{ github.ref_name }} --generate-notes dist/*
+
+  publish-to-pypi:
+    # Temporarily disabling this job until we take ownership of the project on PyPI or rename this fork
+    if: false
+    name: Publish Python distribution to PyPI 🐍
+    needs:
+    - publish-to-gh
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/<package-name>  # Replace <package-name> with your PyPI project name
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish distribution to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1

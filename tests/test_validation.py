@@ -2,11 +2,12 @@ from enum import Enum
 
 import pytest
 from marshmallow import Schema, fields, validate
-from marshmallow.validate import OneOf, Range
+from marshmallow.validate import ContainsOnly, OneOf, Range
 from marshmallow_enum import EnumField
 from marshmallow_union import Union
 
 from marshmallow_jsonschema import JSONSchema, UnsupportedValueError
+
 from . import UserSchema, validate_and_dump
 
 
@@ -15,9 +16,7 @@ def test_equal_validator():
 
     dumped = validate_and_dump(schema)
 
-    assert dumped["definitions"]["UserSchema"]["properties"]["is_user"]["enum"] == [
-        True
-    ]
+    assert dumped["definitions"]["UserSchema"]["properties"]["is_user"]["enum"] == [True]
 
 
 def test_length_validator():
@@ -53,17 +52,11 @@ def test_one_of_validator():
 
     dumped = validate_and_dump(schema)
 
-    assert dumped["definitions"]["UserSchema"]["properties"]["sex"]["enum"] == [
-        "male",
-        "female",
-        "non_binary",
-        "other",
-    ]
-    assert dumped["definitions"]["UserSchema"]["properties"]["sex"]["enumNames"] == [
-        "Male",
-        "Female",
-        "Non-binary/fluid",
-        "Other",
+    assert dumped["definitions"]["UserSchema"]["properties"]["sex"]["oneOf"] == [
+        {"type": "string", "title": "Male", "const": "male"},
+        {"type": "string", "title": "Female", "const": "female"},
+        {"type": "string", "title": "Non-binary/fluid", "const": "non_binary"},
+        {"type": "string", "title": "Other", "const": "other"},
     ]
 
 
@@ -76,15 +69,94 @@ def test_one_of_empty_enum():
     dumped = validate_and_dump(schema)
 
     foo_property = dumped["definitions"]["TestSchema"]["properties"]["foo"]
-    assert foo_property["enum"] == []
-    assert foo_property["enumNames"] == []
+    assert "oneOf" not in foo_property
+
+
+def test_one_of_object():
+    class TestSchema(Schema):
+        foo = fields.Dict(validate=OneOf([{"a": 1}]))
+
+    schema = TestSchema()
+
+    dumped = validate_and_dump(schema)
+
+    foo_property = dumped["definitions"]["TestSchema"]["properties"]["foo"]
+    assert "oneOf" not in foo_property
+
+
+def test_one_of_custom_field():
+    class CustomField(fields.String):
+        def _jsonschema_type_mapping(self):
+            return {"type": "string", "oneOf": [{"const": "one"}, {"const": "two"}]}
+
+    class TestSchema(Schema):
+        foo = CustomField(validate=OneOf(["one", "two"]))
+
+    schema = TestSchema()
+
+    dumped = validate_and_dump(schema)
+
+    foo_property = dumped["definitions"]["TestSchema"]["properties"]["foo"]
+    assert foo_property["oneOf"] == [{"const": "one"}, {"const": "two"}]
+
+
+def test_any_of_validator():
+    class TestSchema(Schema):
+        foo = fields.List(
+            fields.String,
+            validate=ContainsOnly(choices=["apple", "lime", "orange"], labels=["Apple", "Lime", "Orange"]),
+        )
+
+    schema = TestSchema()
+
+    dumped = validate_and_dump(schema)
+
+    foo_property = dumped["definitions"]["TestSchema"]["properties"]["foo"]
+    assert foo_property["uniqueItems"] is True
+    assert foo_property["items"]["anyOf"] == [
+        {"type": "string", "title": "Apple", "const": "apple"},
+        {"type": "string", "title": "Lime", "const": "lime"},
+        {"type": "string", "title": "Orange", "const": "orange"},
+    ]
+
+
+def test_any_of_validator_empty_choice():
+    class TestSchema(Schema):
+        foo = fields.List(
+            fields.String,
+            validate=ContainsOnly(choices=[]),
+        )
+
+    schema = TestSchema()
+
+    dumped = validate_and_dump(schema)
+
+    foo_property = dumped["definitions"]["TestSchema"]["properties"]["foo"]
+    assert foo_property == {
+        "title": "foo",
+        "type": "array",
+        "items": {"title": "foo", "type": "string"},
+    }
+
+
+def test_any_of_validator_with_string_field():
+    class TestSchema(Schema):
+        foo = fields.String(
+            validate=ContainsOnly(choices=["apple", "lime", "orange"], labels=["Apple", "Lime", "Orange"])
+        )
+
+    schema = TestSchema()
+
+    dumped = validate_and_dump(schema)
+
+    foo_property = dumped["definitions"]["TestSchema"]["properties"]["foo"]
+    assert "uniqueItems" not in foo_property
+    assert "items" not in foo_property
 
 
 def test_range():
     class TestSchema(Schema):
-        foo = fields.Integer(
-            validate=Range(min=1, min_inclusive=False, max=3, max_inclusive=False)
-        )
+        foo = fields.Integer(validate=Range(min=1, min_inclusive=False, max=3, max_inclusive=False))
         bar = fields.Integer(validate=Range(min=2, max=4))
 
     schema = TestSchema()
@@ -153,7 +225,7 @@ def test_regexp_error():
     schema = TestSchema()
 
     with pytest.raises(UnsupportedValueError):
-        dumped = validate_and_dump(schema)
+        validate_and_dump(schema)
 
 
 def test_custom_validator():
@@ -189,11 +261,14 @@ def test_enum():
 
 
 def test_union():
+    """
+    Tests whether JSONSchemas can be created using the Union type in marshmallow_union.
+    """
+
     class TestSchema(Schema):
         foo = Union([fields.String(), fields.Integer()])
 
     schema = TestSchema()
-
     dumped = validate_and_dump(schema)
 
     foo_property = dumped["definitions"]["TestSchema"]["properties"]["foo"]

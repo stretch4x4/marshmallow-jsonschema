@@ -1,5 +1,6 @@
 from flask import Flask, jsonify
 from marshmallow import Schema, fields
+
 from marshmallow_jsonschema import JSONSchema
 
 app = Flask(__name__)
@@ -46,4 +47,4 @@ $(document).ready(function() {
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True)
+    app.run(host="0.0.0.0", debug=False)
