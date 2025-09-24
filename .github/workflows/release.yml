@@ -37,7 +37,6 @@ jobs:
         version: ${{ env.UV_VERSION }}
         python-version: ${{ env.PYTHON_VERSION }}
     - name: Validate initial version
-      shell: bash
       run: |
         # Validate that we're starting the process from a dev version, otherwise fail the workflow
         current_version=`uvx bump-my-version@${{ env.BUMPVERSION_VERSION }} show current_version 2>/dev/null`
@@ -47,26 +46,17 @@ jobs:
         fi
     - name: Determine the semantic version bump type required
       id: determine_bump
-      shell: bash
       run: |
-        echo "Classic debug 1"
         breaking=`ls -1 unreleased_notes/*.breaking 2>/dev/null | wc -l`
-        echo "Classic debug 2"
         feature=`ls -1 unreleased_notes/*.feature 2>/dev/null | wc -l`
-        echo "Classic debug 3"
         if [ $breaking != 0 ]; then
-          echo "Classic debug 4"
           bump_type="major"
         elif [ $feature != 0 ]; then
-          echo "Classic debug 5"
           bump_type="minor"
         else
-          echo "Classic debug 6"
           bump_type="patch"
         fi
-        echo "Classic debug 7"
         echo "bump_type=${bump_type}" >> $GITHUB_OUTPUT
-        echo "Classic debug 8"
     - name: Bump to prepare the new version
       # e.g. 1.2.3.dev0
       id: prebump
