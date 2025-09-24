@@ -24,7 +24,7 @@ jobs:
     permissions:
       contents: write  # Required to push back to the repo
     outputs:
-      release_version: ${{ steps.release_notes.outputs.release_version }}
+      release_tag: ${{ steps.release_notes.outputs.release_tag }}
 
     steps:
     - uses: actions/checkout@v5
@@ -68,7 +68,7 @@ jobs:
       run: |
         release_version=`uvx bump-my-version@${{ env.BUMPVERSION_VERSION }} show-bump --ascii | grep release | grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" 2>/dev/null`
         uvx towncrier@${{ env.TOWNCRIER_VERSION }} --yes --version ${release_version}
-        echo "release_version=${release_version}" >> $GITHUB_OUTPUT
+        echo "release_tag=v${release_version}" >> $GITHUB_OUTPUT
     - name: Bump to the release version
       # e.g. 1.2.3
       run: uvx bump-my-version@${{ env.BUMPVERSION_VERSION }} bump --allow-dirty --commit --tag release
@@ -93,7 +93,7 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: ${{needs.bump_version_and_notes.outputs.release_version}}
+        ref: ${{needs.bump_version_and_notes.outputs.release_tag}}
     - name: Set up Python
       uses: astral-sh/setup-uv@v6
       with:
@@ -129,7 +129,7 @@ jobs:
     - name: Create GitHub Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release create ${{needs.bump_version_and_notes.outputs.release_version}} --title ${{needs.bump_version_and_notes.outputs.release_version}} -F ReleaseNotes.rst dist/*
+      run: gh release create ${{needs.bump_version_and_notes.outputs.release_tag}} --title ${{needs.bump_version_and_notes.outputs.release_tag}} -F ReleaseNotes.rst dist/*
 
   publish-to-pypi:
     # Temporarily disabling this job until we take ownership of the project on PyPI or rename this fork
