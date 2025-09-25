@@ -1195,3 +1195,20 @@ def test_custom_jsonschema_python_type_dict_additional_properties_exists():
         assert nested_json["type"] == "object"
         assert "additionalProperties" in nested_json
         assert nested_json["additionalProperties"] == {"title": "", "type": "string"}
+
+
+@pytest.mark.skip("This functionality is not currently in use to retain backwards compatibility")
+def test_can_have_custom_field_schema_without_type():
+    class JsonSchemaEvilField(fields.Field):
+        def _jsonschema_type_mapping(self):
+            return {"evil_field": "true"}
+
+    class UserSchema(Schema):
+        custom_field = JsonSchemaEvilField()
+
+    schema = UserSchema()
+    dumped = validate_and_dump(schema)
+    assert dumped["definitions"]["UserSchema"]["properties"]["custom_field"] == {
+        "evil_field": "true",
+        "title": "custom_field",
+    }

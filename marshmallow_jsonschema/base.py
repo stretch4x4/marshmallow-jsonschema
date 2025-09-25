@@ -302,7 +302,7 @@ class JSONSchema(Schema):
                 continue
             json_schema[md_key] = md_val
 
-        if "array" in json_schema["type"]:
+        if "array" in json_schema.get("type", ""):
             if isinstance(field, fields.List) or hasattr(field, "inner"):
                 json_schema["items"] = self._get_schema_for_field(obj, field.inner)
             else:
@@ -314,7 +314,7 @@ class JSONSchema(Schema):
                 warnings.warn(msg, UserWarning, stacklevel=2)
                 json_schema["items"] = {}
 
-        if "object" in json_schema["type"]:
+        if "object" in json_schema.get("type", ""):
             if hasattr(field, "value_field"):
                 json_schema["additionalProperties"] = self._get_schema_for_field(obj, field.value_field)
             else:
