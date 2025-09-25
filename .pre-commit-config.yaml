@@ -8,11 +8,8 @@ repos:
 - repo: https://github.com/charliermarsh/ruff-pre-commit
   rev: v0.13.1
   hooks:
-  - id: ruff
-    args:
-    - --fix
-    - --show-fixes
-    - --exit-non-zero-on-fix
+  - id: ruff-check
+    args: [--fix, --show-fixes, --exit-non-zero-on-fix]
   - id: ruff-format
     name: ruff-format
     description: Run 'ruff format' for extremely fast Python formatting
