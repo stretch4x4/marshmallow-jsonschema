@@ -232,18 +232,11 @@ class JSONSchema(Schema):
         if pytype in (list, set, tuple):
             if isinstance(field, fields.List) or hasattr(field, "inner"):
                 json_schema["items"] = self._get_schema_for_field(obj, field.inner)
-            elif isinstance(field, fields.Tuple):
-                msg = (
-                    "Conversion for fields of type 'fields.Tuple' are not currently supported, 'items' will be empty"
-                    f" in the schema for '{json_schema['title']}'."
-                )
-                warnings.warn(msg, UserWarning, stacklevel=2)
-                json_schema["items"] = {}
             else:
                 msg = (
-                    f"Cannot determine inner field for custom '{json_schema['title']}' array field, 'items' will be"
-                    " empty in the schema. Consider subclassing 'fields.List', or defining an appropriate "
-                    "'self.inner' attribute for this custom field."
+                    f"Cannot determine inner field for {field.__class__} ({json_schema['title']}) 'array' field. "
+                    "'items' will be empty in the schema. Consider subclassing 'fields.List', or defining an "
+                    "appropriate 'self.inner' attribute for this custom field."
                 )
                 warnings.warn(msg, UserWarning, stacklevel=2)
                 json_schema["items"] = {}
