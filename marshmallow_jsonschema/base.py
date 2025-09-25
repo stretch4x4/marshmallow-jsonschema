@@ -264,7 +264,11 @@ class JSONSchema(Schema):
     def _from_custom_field_type(
         self, obj, field: fields.Field, type_mapping: dict[str, typing.Any]
     ) -> dict[str, typing.Any]:
-        """(DEPRECATED) Get schema definition for a custom field."""
+        """
+        (DEPRECATED) Get schema definition for a custom field.
+        Currently, not in use but allows us to generate what we can of a fields schema while updating it with
+        _jsonschema_type_mapping rather than _jsonschema_type_mapping being an exact representation
+        """
         msg = (
             "Use of the '_jsonschema_type_mapping' method is deprecated. For custom field support, consider "
             "specifying the equivalent python type instead, using the 'jsonschema_python_type' key in metadata."
@@ -423,7 +427,13 @@ class JSONSchema(Schema):
         # Will just use the 'jsonschema_python_type' metadata mapping if present
         type_mapping = self._get_value_from_obj_or_metadata(field, "_jsonschema_type_mapping")
         if type_mapping is not None and PYTYPE_KEY not in field.metadata:
-            schema = self._from_custom_field_type(obj, field, type_mapping)
+            if "complete_field_schema_provided":
+                # TODO: in the future consider adding some method to expose this as a param to the user
+                #  currently retaining the current behaviour for backwards compatability
+                #  being able to override specific schema properties could be useful though
+                schema = type_mapping
+            else:
+                schema = self._from_custom_field_type(obj, field, type_mapping)
         elif isinstance(field, fields.Nested):
             # Special treatment for nested fields.
             schema = self._from_nested_schema(obj, field)

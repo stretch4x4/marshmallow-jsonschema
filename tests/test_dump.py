@@ -472,25 +472,7 @@ def test_unknown_typed_field():
 
     dumped = validate_and_dump(schema)
 
-    assert dumped["definitions"]["UserSchema"]["properties"]["favourite_colour"] == {
-        "title": "favourite_colour",
-        "type": "string",
-    }
-
-    class UserSchemaExtra(Schema):
-        name = fields.String(required=True)
-        favourite_colour = Colour(
-            default="#ffffff", metadata={"description": "User's favorite colour", "title": "Colour"}
-        )
-
-    schema = UserSchemaExtra()
-    dumped = validate_and_dump(schema)
-    assert dumped["definitions"]["UserSchemaExtra"]["properties"]["favourite_colour"] == {
-        "type": "string",
-        "default": "#ffffff",
-        "description": "User's favorite colour",
-        "title": "Colour",
-    }
+    assert dumped["definitions"]["UserSchema"]["properties"]["favourite_colour"] == {"type": "string"}
 
 
 def test_field_subclass():
@@ -916,6 +898,7 @@ def test_nested_dataclass():
 
 def test_customfield_metadata_jsonschema_python_type():
     """
+    NOTE: calculating additional metadata not currently in use
     Tests that specifying the equivalent pytpe in the metadata works for a custom field, and produces
     same result as using the deprecated _jsonschema_type_mapping function with equivalent json type.
     "jsonschema_python_type" should also be excluded from the dumped schema if set in metadata.
@@ -944,7 +927,7 @@ def test_customfield_metadata_jsonschema_python_type():
 
     assert props["custom_field_pytpe"] == {"title": "custom_field_pytpe", "type": "string"}
     assert props["custom_field_pytype2"] == {"title": "custom_field_pytype2", "type": "string"}
-    assert props["custom_field_jsonschema_type"] == {"title": "custom_field_jsonschema_type", "type": "string"}
+    assert props["custom_field_jsonschema_type"] == {"type": "string"}
 
 
 def test_customfield_metadata_pytype_mapping_overrides_jsonschema_type_mapping():
@@ -972,6 +955,7 @@ def test_customfield_metadata_pytype_mapping_overrides_jsonschema_type_mapping()
 
 def test_jsonschema_schema_passed_through():
     """
+    NOTE: calculating additional metadata not currently in use
     Test for backwards compatibility, with changed behaviour of _jsonschema_type_mapping.
     If entire schema has been provided in _jsonschema_type_mapping, test that it still
     dumps as expected.
@@ -989,12 +973,12 @@ def test_jsonschema_schema_passed_through():
     class SchemaGiven(Schema):
         custom_field = CustomIntSchemaGiven(
             default=7,
-            metadata={"description": "Custom description", "title": "CustomInt"},
+            metadata={"description": "modified description", "title": "CustomInt"},
         )
 
     class CustomInt(fields.Field):
         def _jsonschema_type_mapping(self):
-            return {"type": "integer"}
+            return {"type": "integer", "description": "Custom description"}
 
     class SchemaInferred(Schema):
         custom_field = CustomInt(
@@ -1015,6 +999,8 @@ def test_jsonschema_schema_passed_through():
         "type": "integer",
     }
     assert dumped["definitions"]["SchemaGiven"]["properties"]["custom_field"] == expected_schema
+    del expected_schema["default"]  # inferred won't currently collect these extra bits of metadata
+    del expected_schema["title"]
     assert dumped["definitions"]["SchemaInferred"]["properties"]["custom_field"] == expected_schema
 
 
@@ -1102,6 +1088,7 @@ def test_custom_dict_custom_values():
     assert all(d == props_list[0] for d in props_list)
 
 
+@pytest.mark.skip("This functionality is not currently in use to retain backwards compatibility")
 def test_custom_jsonschema_python_type_list_items_exists():
     """
     When a custom fields.Field instance is used with jsonschema_python_type=list or _jsonschema_type_mapping "array",
@@ -1156,7 +1143,8 @@ def test_custom_jsonschema_python_type_list_items_exists():
         assert nested_json["items"] == {"title": "", "type": "string"}
 
 
-def test_custom_jsonschema_python_type_dict_additionalproperties_exists():
+@pytest.mark.skip("This functionality is not currently in use to retain backwards compatibility")
+def test_custom_jsonschema_python_type_dict_additional_properties_exists():
     """
     When a custom fields.Field instance is used with jsonschema_python_type=dict or _jsonschema_type_mapping "object",
     an empty "additionalProperties" schema should be present
