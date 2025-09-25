@@ -20,3 +20,7 @@ repos:
     language: python
     require_serial: true
     args: []
+  - id: ruff
+    name: ruff check long-lines
+    description: Run ruff check with only E501 Line too long turned on
+    args: [--select=E501]
