@@ -185,8 +185,8 @@ Example custom field definitions, using `'jsonschema_python_type'`:
 ```python
 class Colour(fields.Field):
     def __init__(self, **kwargs):
-            super().__init__(**kwargs)
-            self.metadata["jsonschema_python_type"] = str
+        super().__init__(**kwargs)
+        self.metadata["jsonschema_python_type"] = str
 
     def _serialize(self, value, _attr, _obj):
         r, g, b = value
