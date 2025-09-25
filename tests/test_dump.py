@@ -1043,6 +1043,26 @@ def test_custom_list_inner_custom_field():
     )
 
 
+def test_custom_field_type():
+    """
+    Test that jsonschema_python_type can also accept valid field types
+    Note it won't accept Union or Enum types as these are handled outside the type logic
+    """
+
+    class CustomUuid(fields.Field):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.metadata["jsonschema_python_type"] = fields.UUID
+
+    class UserSchema(Schema):
+        custom_uuid = CustomUuid(metadata={"title": "Complex"})
+
+    schema = UserSchema()
+    dumped = validate_and_dump(schema)
+    props = dumped["definitions"]["UserSchema"]["properties"]
+    assert props["custom_uuid"] == {"format": "uuid", "title": "Complex", "type": "string"}
+
+
 def test_custom_dict_custom_values():
     """
     Test that custom dicts, keys and values are captured correctly
@@ -1088,7 +1108,6 @@ def test_custom_dict_custom_values():
     assert all(d == props_list[0] for d in props_list)
 
 
-@pytest.mark.skip("This functionality is not currently in use to retain backwards compatibility")
 def test_custom_jsonschema_python_type_list_items_exists():
     """
     When a custom fields.Field instance is used with jsonschema_python_type=list or _jsonschema_type_mapping "array",
@@ -1104,7 +1123,7 @@ def test_custom_jsonschema_python_type_list_items_exists():
 
     class JsonSchemaTypeField(fields.Field):
         def _jsonschema_type_mapping(self):
-            return {"type": "array"}
+            return {"generate_missing_schema_keys": list}
 
     # Custom fields which we want to treat like lists: Inner attribute defined
     class CustomListFieldWithInner(fields.Field):
@@ -1119,7 +1138,7 @@ def test_custom_jsonschema_python_type_list_items_exists():
             self.inner = inner_field
 
         def _jsonschema_type_mapping(self):
-            return {"type": "array"}
+            return {"generate_missing_schema_keys": list}
 
     class UserSchema(Schema):
         custom_field = CustomListField()
@@ -1143,7 +1162,6 @@ def test_custom_jsonschema_python_type_list_items_exists():
         assert nested_json["items"] == {"title": "", "type": "string"}
 
 
-@pytest.mark.skip("This functionality is not currently in use to retain backwards compatibility")
 def test_custom_jsonschema_python_type_dict_additional_properties_exists():
     """
     When a custom fields.Field instance is used with jsonschema_python_type=dict or _jsonschema_type_mapping "object",
@@ -1158,7 +1176,7 @@ def test_custom_jsonschema_python_type_dict_additional_properties_exists():
 
     class JsonSchemaTypeField(fields.Field):
         def _jsonschema_type_mapping(self):
-            return {"type": "object"}
+            return {"generate_missing_schema_keys": dict}
 
     # Custom fields which we want to treat like dicts: value_field attribute defined
     class CustomDictFieldWithValueField(fields.Field):
@@ -1173,7 +1191,7 @@ def test_custom_jsonschema_python_type_dict_additional_properties_exists():
             self.value_field = value_field
 
         def _jsonschema_type_mapping(self):
-            return {"type": "object"}
+            return {"generate_missing_schema_keys": dict}
 
     class UserSchema(Schema):
         custom_field = CustomDictField()
@@ -1197,7 +1215,6 @@ def test_custom_jsonschema_python_type_dict_additional_properties_exists():
         assert nested_json["additionalProperties"] == {"title": "", "type": "string"}
 
 
-@pytest.mark.skip("This functionality is not currently in use to retain backwards compatibility")
 def test_can_have_custom_field_schema_without_type():
     class JsonSchemaEvilField(fields.Field):
         def _jsonschema_type_mapping(self):
@@ -1208,7 +1225,41 @@ def test_can_have_custom_field_schema_without_type():
 
     schema = UserSchema()
     dumped = validate_and_dump(schema)
-    assert dumped["definitions"]["UserSchema"]["properties"]["custom_field"] == {
-        "evil_field": "true",
-        "title": "custom_field",
-    }
+    assert dumped["definitions"]["UserSchema"]["properties"]["custom_field"] == {"evil_field": "true"}
+
+
+def test_jsonschema_type_mapping_must_be_a_dictionary():
+    class JsonSchemaBrokenField(fields.Field):
+        def _jsonschema_type_mapping(self):
+            return "list"
+
+    class UserSchema(Schema):
+        custom_field = JsonSchemaBrokenField()
+
+    schema = UserSchema()
+    with pytest.raises(UnsupportedValueError) as e:
+        validate_and_dump(schema)
+    assert str(e.value) == "_jsonschema_type_mapping should be a dictionary, received 'list' for field 'custom_field'"
+
+
+@pytest.mark.parametrize(
+    ("field_type", "msg"),
+    [
+        ("not_a_type", "A python type was not supplied for 'jsonschema_python_type'"),
+        (JSONSchema, "'JSONSchema' is not a supported python type for 'jsonschema_python_type'"),
+        (None, "Unsupported field type JsonSchemaBrokenField"),
+    ],
+)
+def test_field_pytype_errors(field_type, msg):
+    class JsonSchemaBrokenField(fields.Field):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.attribute = "mapped"
+            if field_type is not None:
+                self.metadata["jsonschema_python_type"] = field_type
+
+    field = JsonSchemaBrokenField()
+
+    with pytest.raises(UnsupportedValueError) as e:
+        JSONSchema._get_python_type(field)
+    assert str(e.value) == f"{msg}, in 'mapped'"
