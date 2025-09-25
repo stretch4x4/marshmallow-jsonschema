@@ -233,29 +233,94 @@ class JSONSchema(Schema):
             if isinstance(field, fields.List) or hasattr(field, "inner"):
                 json_schema["items"] = self._get_schema_for_field(obj, field.inner)
             elif isinstance(field, fields.Tuple):
-                warnings.warn(
-                    f"""Conversion for fields of type 'fields.Tuple' are not currently supported, 'items' will be empty
-                      in the schema for '{json_schema["title"]}'.""",
-                    UserWarning,
-                    stacklevel=2,
+                msg = (
+                    "Conversion for fields of type 'fields.Tuple' are not currently supported, 'items' will be empty"
+                    f" in the schema for '{json_schema['title']}'."
                 )
+                warnings.warn(msg, UserWarning, stacklevel=2)
                 json_schema["items"] = {}
             else:
-                warnings.warn(
-                    f"""Cannot determine inner field for custom '{json_schema["title"]}' array field, 'items' will be
-                      empty in the schema. Consider subclassing 'fields.List', or defining an appropriate 'self.inner'
-                        attribute for this custom field.""",
-                    UserWarning,
-                    stacklevel=2,
+                msg = (
+                    f"Cannot determine inner field for custom '{json_schema['title']}' array field, 'items' will be"
+                    " empty in the schema. Consider subclassing 'fields.List', or defining an appropriate "
+                    "'self.inner' attribute for this custom field."
                 )
+                warnings.warn(msg, UserWarning, stacklevel=2)
                 json_schema["items"] = {}
 
         if pytype is dict:
-            json_schema["additionalProperties"] = (
-                self._get_schema_for_field(obj, field.value_field)
-                if isinstance(field, fields.Dict) and field.value_field
-                else {}
-            )
+            if hasattr(field, "value_field"):
+                json_schema["additionalProperties"] = self._get_schema_for_field(obj, field.value_field)
+            else:
+                msg = (
+                    f"Cannot determine value field for custom '{json_schema['title']}' dict field, "
+                    "'additionalProperties' will be empty in the schema. Consider subclassing 'fields.Dict', or "
+                    "defining an appropriate 'self.value_field' attribute for this custom field."
+                )
+                warnings.warn(msg, UserWarning, stacklevel=2)
+                json_schema["additionalProperties"] = {}
+        return json_schema
+
+    def _from_custom_field_type(
+        self, obj, field: fields.Field, type_mapping: dict[str, typing.Any]
+    ) -> dict[str, typing.Any]:
+        """(DEPRECATED) Get schema definition for a custom field."""
+        msg = (
+            "Use of the '_jsonschema_type_mapping' method is deprecated. For custom field support, consider "
+            "specifying the equivalent python type instead, using the 'jsonschema_python_type' key in metadata."
+        )
+        warnings.warn(msg, DeprecationWarning, stacklevel=2)
+        json_schema = type_mapping
+
+        json_schema["title"] = field.attribute or field.name or ""
+
+        if field.dump_only:
+            json_schema["readOnly"] = True
+
+        if field.default is not missing and not callable(field.default):
+            json_schema["default"] = field.default
+
+        if ALLOW_MARSHMALLOW_NATIVE_ENUMS and isinstance(field, MarshmallowNativeEnumField):
+            json_schema["enum"] = self._get_marshmallow_native_enum_values(field)
+        elif ALLOW_MARSHMALLOW_ENUM_ENUMS and isinstance(field, MarshmallowEnumEnumField):
+            json_schema["enum"] = self._get_marshmallow_enum_enum_values(field)
+
+        if field.allow_none:
+            previous_type = json_schema["type"]
+            json_schema["type"] = [previous_type, "null"]
+
+        # NOTE: doubled up to maintain backwards compatibility
+        metadata = field.metadata.get("metadata", {})
+        metadata.update(field.metadata)
+
+        for md_key, md_val in metadata.items():
+            if md_key in ("metadata", "name", PYTYPE_KEY):
+                continue
+            json_schema[md_key] = md_val
+
+        if "array" in json_schema["type"]:
+            if isinstance(field, fields.List) or hasattr(field, "inner"):
+                json_schema["items"] = self._get_schema_for_field(obj, field.inner)
+            else:
+                msg = (
+                    f"Cannot determine inner field for custom '{json_schema['title']}' array field, 'items' will be"
+                    " empty in the schema. Consider subclassing 'fields.List', or defining an appropriate "
+                    "'self.inner' attribute for this custom field."
+                )
+                warnings.warn(msg, UserWarning, stacklevel=2)
+                json_schema["items"] = {}
+
+        if "object" in json_schema["type"]:
+            if hasattr(field, "value_field"):
+                json_schema["additionalProperties"] = self._get_schema_for_field(obj, field.value_field)
+            else:
+                msg = (
+                    f"Cannot determine value field for custom '{json_schema['title']}' dict field, "
+                    "'additionalProperties' will be empty in the schema. Consider subclassing 'fields.Dict', or "
+                    "defining an appropriate 'self.value_field' attribute for this custom field."
+                )
+                warnings.warn(msg, UserWarning, stacklevel=2)
+                json_schema["additionalProperties"] = {}
         return json_schema
 
     def _get_marshmallow_enum_enum_values(self, field) -> list[str]:
@@ -316,7 +381,20 @@ class JSONSchema(Schema):
     def _get_python_type(self, field: fields.Field) -> builtins.type:
         """Get python type based on field subclass"""
         if PYTYPE_KEY in field.metadata:
-            return field.metadata[PYTYPE_KEY]
+            pytype = field.metadata[PYTYPE_KEY]
+            if not isinstance(pytype, type):
+                msg = (
+                    "A python type was not supplied for 'jsonschema_python_type', in "
+                    f"'{field.attribute or field.name or field.__class__.__name__}'"
+                )
+                raise TypeError(msg)
+            if pytype not in PY_TO_JSON_TYPES_MAP:
+                msg = (
+                    f"'{PYTYPE_KEY}' is not a supported python type for dumping in marshmallow_jsonschema. In field "
+                    "'{field.attribute or field.name or field.__class__.__name__}'"
+                )
+                raise UnsupportedValueError(msg)
+            return pytype
 
         for map_class, pytype in MARSHMALLOW_TO_PY_TYPES_PAIRS:
             if issubclass(field.__class__, map_class):
@@ -324,65 +402,6 @@ class JSONSchema(Schema):
 
         msg = f"unsupported field type {field!s}"
         raise UnsupportedValueError(msg)
-
-    def _from_custom_field_type(
-        self, obj, field: fields.Field, type_mapping: dict[str, typing.Any]
-    ) -> dict[str, typing.Any]:
-        """(DEPRECATED) Get schema definition for a custom field."""
-        warnings.warn(
-            """Use of the '_jsonschema_type_mapping' method is deprecated. For custom field support, consider specifying
-              the equivalent python type instead, using the 'jsonschema_python_type' key in metadata.""",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        json_schema = type_mapping
-
-        json_schema["title"] = field.attribute or field.name or ""
-
-        if field.dump_only:
-            json_schema["readOnly"] = True
-
-        if field.default is not missing and not callable(field.default):
-            json_schema["default"] = field.default
-
-        if ALLOW_MARSHMALLOW_NATIVE_ENUMS and isinstance(field, MarshmallowNativeEnumField):
-            json_schema["enum"] = self._get_marshmallow_native_enum_values(field)
-        elif ALLOW_MARSHMALLOW_ENUM_ENUMS and isinstance(field, MarshmallowEnumEnumField):
-            json_schema["enum"] = self._get_marshmallow_enum_enum_values(field)
-
-        if field.allow_none:
-            previous_type = json_schema["type"]
-            json_schema["type"] = [previous_type, "null"]
-
-        # NOTE: doubled up to maintain backwards compatibility
-        metadata = field.metadata.get("metadata", {})
-        metadata.update(field.metadata)
-
-        for md_key, md_val in metadata.items():
-            if md_key in ("metadata", "name", PYTYPE_KEY):
-                continue
-            json_schema[md_key] = md_val
-
-        if "array" in json_schema["type"]:
-            if isinstance(field, fields.List) or hasattr(field, "inner"):
-                json_schema["items"] = self._get_schema_for_field(obj, field.inner)
-            else:
-                warnings.warn(
-                    f"""Cannot determine inner field for custom '{json_schema["title"]}' array field, 'items' will be\
-                        empty in the schema. Consider subclassing 'fields.List', or defining an appropriate 'self.inner'
-                          attribute for this custom field.""",
-                    UserWarning,
-                    stacklevel=2,
-                )
-                json_schema["items"] = {}
-
-        if "object" in json_schema["type"]:
-            json_schema["additionalProperties"] = (
-                self._get_schema_for_field(obj, field.value_field)
-                if isinstance(field, fields.Dict) and field.value_field
-                else {}
-            )
-        return json_schema
 
     def _get_value_from_obj_or_metadata(self, field: fields.Field, attr: str) -> None | typing.Any:
         """

@@ -181,18 +181,16 @@ For custom field classes, you can add a mapping to an equivalent python type usi
 If requiring proper schema validation and nesting with custom list-like fields, consider subclassing `fields.List`, or alternatively provide a `self.inner` attribute, set to a field instance representing the type of the items inside the custom list.
 
 Example custom field definitions, using `'jsonschema_python_type'`:
+
 ```python
 class Colour(fields.Field):
     def __init__(self, **kwargs):
             super().__init__(**kwargs)
             self.metadata["jsonschema_python_type"] = str
 
-    def _serialize(self, value, attr, obj):
+    def _serialize(self, value, _attr, _obj):
         r, g, b = value
-        r = "%02X" % (r,)
-        g = "%02X" % (g,)
-        b = "%02X" % (b,)
-        return '#' + r + g + b
+        return f"#{r:x}{g:x}{b:x}"
 
 class ColourList(fields.Field):
     def __init__(self, **kwargs):
@@ -217,7 +215,10 @@ json_schema.dump(schema)
 ```
 
 
-#### (DEPRECATED) Custom Type support
+### [__deprecated__] Custom Type support using `_jsonschema_type_mapping()`
+
+> `_jsonschema_type_mapping()` is deprecated in favour of using `'jsonschema_python_type'` for type aliases, as described above.
+
 Simply add a `_jsonschema_type_mapping` method to your field
 so we know how it ought to get serialized to JSON Schema.
 
@@ -233,12 +234,9 @@ class Colour(fields.Field):
             'type': 'string',
         }
 
-    def _serialize(self, value, attr, obj):
+    def _serialize(self, value, _attr, _obj):
         r, g, b = value
-        r = "%02X" % (r,)
-        g = "%02X" % (g,)
-        b = "%02X" % (b,)
-        return '#' + r + g + b
+        return f"#{r:x}{g:x}{b:x}"
 
 class Gender(fields.String):
     def _jsonschema_type_mapping(self):

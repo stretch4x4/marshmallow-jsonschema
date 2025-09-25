@@ -99,6 +99,8 @@ ignore = [
     # TODO: renable the following
     "ANN",  # typing rules - Return to this and enable
     "SLF",  # flake8-self - private vars, return to this
+    "C901", # function too complex, return to this
+    "PLR0912",  # too many branches, return to this
 ]
 
 [tool.ruff.lint.per-file-ignores]

@@ -1094,7 +1094,7 @@ def test_custom_dict_custom_values():
     dumped = validate_and_dump(schema)
     props = dumped["definitions"]["UserSchema"]["properties"]
     props_list = []
-    # The title in "additionalProperties" should be only difference between each of the properties, remove for comparison
+    # The title in "additionalProperties" should be only diff between each of the properties, remove for comparison
     for field_schema in props.values():
         field_schema["additionalProperties"].pop("title", None)
         props_list.append(field_schema)
@@ -1162,6 +1162,7 @@ def test_custom_jsonschema_python_type_dict_additionalproperties_exists():
     an empty "additionalProperties" schema should be present
     """
 
+    # Custom fields which we want to treat like dicts: No value_field attribute defined
     class CustomDictField(fields.Field):
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
@@ -1171,17 +1172,38 @@ def test_custom_jsonschema_python_type_dict_additionalproperties_exists():
         def _jsonschema_type_mapping(self):
             return {"type": "object"}
 
+    # Custom fields which we want to treat like dicts: value_field attribute defined
+    class CustomDictFieldWithValueField(fields.Field):
+        def __init__(self, value_field: fields.Field, **kwargs):
+            super().__init__(**kwargs)
+            self.metadata["jsonschema_python_type"] = dict
+            self.value_field = value_field
+
+    class JsonSchemaTypeFieldWithValueField(fields.Field):
+        def __init__(self, value_field: fields.Field, **kwargs):
+            super().__init__(**kwargs)
+            self.value_field = value_field
+
+        def _jsonschema_type_mapping(self):
+            return {"type": "object"}
+
     class UserSchema(Schema):
         custom_field = CustomDictField()
         jsonschema_field = JsonSchemaTypeField()
+        custom_field_value = CustomDictFieldWithValueField(value_field=fields.String())
+        jsonschema_field_value = JsonSchemaTypeFieldWithValueField(value_field=fields.String())
 
     schema = UserSchema()
     dumped = validate_and_dump(schema)
     pytype_prop = dumped["definitions"]["UserSchema"]["properties"]["custom_field"]
     jsonschema_prop = dumped["definitions"]["UserSchema"]["properties"]["jsonschema_field"]
-    props = (pytype_prop, jsonschema_prop)
-    for nested_json in props:
+    pytype_value_prop = dumped["definitions"]["UserSchema"]["properties"]["custom_field_value"]
+    jsonschema_value_prop = dumped["definitions"]["UserSchema"]["properties"]["jsonschema_field_value"]
+    for nested_json in (pytype_prop, jsonschema_prop):
         assert nested_json["type"] == "object"
         assert "additionalProperties" in nested_json
-        item_schema = nested_json["additionalProperties"]
-        assert item_schema == {}
+        assert nested_json["additionalProperties"] == {}
+    for nested_json in (pytype_value_prop, jsonschema_value_prop):
+        assert nested_json["type"] == "object"
+        assert "additionalProperties" in nested_json
+        assert nested_json["additionalProperties"] == {"title": "", "type": "string"}
