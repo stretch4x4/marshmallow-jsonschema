@@ -249,7 +249,7 @@ class JSONSchema(Schema):
                 json_schema["items"] = {}
 
         if pytype is dict:
-            if hasattr(field, "value_field"):
+            if hasattr(field, "value_field") and field.value_field is not None:
                 json_schema["additionalProperties"] = self._get_schema_for_field(obj, field.value_field)
             else:
                 msg = (
