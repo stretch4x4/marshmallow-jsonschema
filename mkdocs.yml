@@ -1,0 +1,4 @@
+site_name: marshmallow-jsonschema
+theme:
+  name: readthedocs
+repo_url: https://github.com/stretch4x4/marshmallow-jsonschema/

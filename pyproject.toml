@@ -51,7 +51,7 @@ union = [
 
 [project.urls]
 Homepage = "https://github.com/stretch4x4/marshmallow-jsonschema"
-Documentation = "https://github.com/stretch4x4/marshmallow-jsonschema/blob/master/README.md"
+Documentation = "https://marshmallow-jsonschema.readthedocs.io/en/latest/"
 Repository = "https://github.com/stretch4x4/marshmallow-jsonschema.git"
 Issues = "https://github.com/stretch4x4/marshmallow-jsonschema/issues"
 Changelog = "https://github.com/stretch4x4/marshmallow-jsonschema/blob/master/ReleaseNotes.rst"
@@ -67,6 +67,9 @@ dev = [
     "pytest~=8.4",
     "pytest-cov~=7.0",
     "ruff==0.13.1", # hard pinned to match the pre-commit-config
+]
+docs = [
+    "mkdocs~=1.6",
 ]
 
 [tool.ruff]
