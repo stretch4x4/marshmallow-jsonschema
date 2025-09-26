@@ -51,7 +51,7 @@ union = [
 
 [project.urls]
 Homepage = "https://github.com/stretch4x4/marshmallow-jsonschema"
-Documentation = "https://github.com/stretch4x4/marshmallow-jsonschema/blob/master/README.md"
+Documentation = "https://marshmallow-jsonschema.readthedocs.io/en/latest/"
 Repository = "https://github.com/stretch4x4/marshmallow-jsonschema.git"
 Issues = "https://github.com/stretch4x4/marshmallow-jsonschema/issues"
 Changelog = "https://github.com/stretch4x4/marshmallow-jsonschema/blob/master/ReleaseNotes.rst"
