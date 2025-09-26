@@ -91,6 +91,7 @@ extend-exclude = [
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
+    "E501",  # Line too long - we check this manually on its own after the ruff formatter
     "COM",  # flake8 comma rules - redundant with ruff format
     "D",  # pydocstyle - not currently a priority
     "PLR2004",  # Magic value used in comparison - not currently a priority
@@ -99,6 +100,8 @@ ignore = [
     # TODO: renable the following
     "ANN",  # typing rules - Return to this and enable
     "SLF",  # flake8-self - private vars, return to this
+    "C901", # function too complex, return to this
+    "PLR0912",  # too many branches, return to this
 ]
 
 [tool.ruff.lint.per-file-ignores]

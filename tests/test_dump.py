@@ -894,3 +894,372 @@ def test_nested_dataclass():
         "$ref": "#/definitions/SubDataClass",
     }
     assert data["definitions"]["TestDataClass"]["required"] == ["other", "subclass"]
+
+
+def test_customfield_metadata_jsonschema_python_type():
+    """
+    NOTE: calculating additional metadata not currently in use
+    Tests that specifying the equivalent pytpe in the metadata works for a custom field, and produces
+    same result as using the deprecated _jsonschema_type_mapping function with equivalent json type.
+    "jsonschema_python_type" should also be excluded from the dumped schema if set in metadata.
+    """
+
+    class CustomFieldPytype(fields.Field):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.metadata["jsonschema_python_type"] = str
+
+    class CustomFieldPytype2(fields.Field):
+        """This field tests setting pytpe on creation inside UserSchema"""
+
+    class CustomFieldJSONSchemaType(fields.Field):
+        def _jsonschema_type_mapping(self):
+            return {"type": "string"}
+
+    class UserSchema(Schema):
+        custom_field_pytpe = CustomFieldPytype()
+        custom_field_pytype2 = CustomFieldPytype2(metadata={"jsonschema_python_type": str})
+        custom_field_jsonschema_type = CustomFieldJSONSchemaType()
+
+    schema = UserSchema()
+    dumped = validate_and_dump(schema)
+    props = dumped["definitions"]["UserSchema"]["properties"]
+
+    assert props["custom_field_pytpe"] == {"title": "custom_field_pytpe", "type": "string"}
+    assert props["custom_field_pytype2"] == {"title": "custom_field_pytype2", "type": "string"}
+    assert props["custom_field_jsonschema_type"] == {"type": "string"}
+
+
+def test_customfield_metadata_pytype_mapping_overrides_jsonschema_type_mapping():
+    """
+    Test that if using pytpe mapping in metadata, that this overwrites the deprecated
+    _jsonschema_type_mapping function if also provided.
+    """
+
+    class CustomField(fields.Field):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.metadata["jsonschema_python_type"] = str
+
+        def _jsonschema_type_mapping(self):
+            return {"type": "object"}
+
+    class UserSchema(Schema):
+        custom_field = CustomField()
+
+    schema = UserSchema()
+    dumped = validate_and_dump(schema)
+    expected_schema = {"title": "custom_field", "type": "string"}
+    assert dumped["definitions"]["UserSchema"]["properties"]["custom_field"] == expected_schema
+
+
+def test_jsonschema_schema_passed_through():
+    """
+    NOTE: calculating additional metadata not currently in use
+    Test for backwards compatibility, with changed behaviour of _jsonschema_type_mapping.
+    If entire schema has been provided in _jsonschema_type_mapping, test that it still
+    dumps as expected.
+    """
+
+    class CustomIntSchemaGiven(fields.Field):
+        def _jsonschema_type_mapping(self):
+            return {
+                "type": "integer",
+                "default": 7,
+                "description": "Custom description",
+                "title": "CustomInt",
+            }
+
+    class SchemaGiven(Schema):
+        custom_field = CustomIntSchemaGiven(
+            default=7,
+            metadata={"description": "modified description", "title": "CustomInt"},
+        )
+
+    class CustomInt(fields.Field):
+        def _jsonschema_type_mapping(self):
+            return {"type": "integer", "description": "Custom description"}
+
+    class SchemaInferred(Schema):
+        custom_field = CustomInt(
+            default=7,
+            metadata={"description": "Custom description", "title": "CustomInt"},
+        )
+
+    class UserSchema(Schema):
+        schema_given = fields.Nested(SchemaGiven())
+        schema_inferred = fields.Nested(SchemaInferred())
+
+    schema = UserSchema()
+    dumped = validate_and_dump(schema)
+    expected_schema = {
+        "default": 7,
+        "description": "Custom description",
+        "title": "CustomInt",
+        "type": "integer",
+    }
+    assert dumped["definitions"]["SchemaGiven"]["properties"]["custom_field"] == expected_schema
+    del expected_schema["default"]  # inferred won't currently collect these extra bits of metadata
+    del expected_schema["title"]
+    assert dumped["definitions"]["SchemaInferred"]["properties"]["custom_field"] == expected_schema
+
+
+def test_custom_list_inner_custom_field():
+    """
+    Test that custom lists, inner fields are captured correctly
+    """
+
+    class CustomFloat(fields.Field):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.metadata["jsonschema_python_type"] = float
+
+    class NestedCustomList(fields.List):
+        def __init__(self, **kwargs):
+            super().__init__(CustomFloat(), **kwargs)
+
+    class CustomList(fields.List):
+        def __init__(self, **kwargs):
+            super().__init__(fields.Float, **kwargs)
+
+    class UserSchema(Schema):
+        normal_list = fields.List(fields.Float, metadata={"title": "Float array"})
+        normal_list_custom_inner = fields.List(CustomFloat, metadata={"title": "Float array"})
+        custom_list = CustomList(metadata={"title": "Float array"})
+        custom_list_custom_inner = NestedCustomList(metadata={"title": "Float array"})
+
+    schema = UserSchema()
+    dumped = validate_and_dump(schema)
+    props = dumped["definitions"]["UserSchema"]["properties"]
+    # The title in "items" should be only difference between each of the properties, remove for comparison
+    for field_schema in props.values():
+        field_schema["items"].pop("title", None)
+
+    assert (
+        props["normal_list"]
+        == props["custom_list"]
+        == props["normal_list_custom_inner"]
+        == props["custom_list_custom_inner"]
+    )
+
+
+def test_custom_field_type():
+    """
+    Test that jsonschema_python_type can also accept valid field types
+    Note it won't accept Union or Enum types as these are handled outside the type logic
+    """
+
+    class CustomUuid(fields.Field):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.metadata["jsonschema_python_type"] = fields.UUID
+
+    class UserSchema(Schema):
+        custom_uuid = CustomUuid(metadata={"title": "Complex"})
+
+    schema = UserSchema()
+    dumped = validate_and_dump(schema)
+    props = dumped["definitions"]["UserSchema"]["properties"]
+    assert props["custom_uuid"] == {"format": "uuid", "title": "Complex", "type": "string"}
+
+
+def test_custom_dict_custom_values():
+    """
+    Test that custom dicts, keys and values are captured correctly
+    """
+
+    class CustomKey(fields.Field):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.metadata["jsonschema_python_type"] = str
+
+    class CustomValue(fields.Field):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.metadata["jsonschema_python_type"] = int
+
+    class CustomDict(fields.Dict):
+        def __init__(self, keys, values, **kwargs):
+            super().__init__(keys=keys, values=values, **kwargs)
+
+    class UserSchema(Schema):
+        normal_dict = fields.Dict(keys=fields.String, values=fields.Integer, metadata={"title": "dict field"})
+        normal_dict_custom_values = fields.Dict(
+            keys=fields.String, values=CustomValue(), metadata={"title": "dict field"}
+        )
+        normal_dict_custom_keys = fields.Dict(keys=CustomKey(), values=fields.Integer, metadata={"title": "dict field"})
+        normal_dict_custom_items = fields.Dict(keys=CustomKey(), values=CustomValue(), metadata={"title": "dict field"})
+        custom_dict = CustomDict(keys=fields.String, values=fields.Integer, metadata={"title": "dict field"})
+        custom_dict_custom_values = CustomDict(
+            keys=fields.String, values=CustomValue(), metadata={"title": "dict field"}
+        )
+        custom_dict_custom_keys = CustomDict(keys=CustomKey(), values=fields.Integer, metadata={"title": "dict field"})
+        custom_dict_custom_items = CustomDict(keys=CustomKey(), values=CustomValue(), metadata={"title": "dict field"})
+
+    schema = UserSchema()
+    dumped = validate_and_dump(schema)
+    props = dumped["definitions"]["UserSchema"]["properties"]
+    props_list = []
+    # The title in "additionalProperties" should be only diff between each of the properties, remove for comparison
+    for field_schema in props.values():
+        field_schema["additionalProperties"].pop("title", None)
+        props_list.append(field_schema)
+
+    assert all(d == props_list[0] for d in props_list)
+
+
+def test_custom_jsonschema_python_type_list_items_exists():
+    """
+    When a custom fields.Field instance is used with jsonschema_python_type=list or _jsonschema_type_mapping "array",
+    an empty "items" schema should be present.
+    If an 'inner' attribute is present in a custom list-like field, then this should be used.
+    """
+
+    # Custom fields which we want to treat like lists: No inner attribute defined
+    class CustomListField(fields.Field):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.metadata["jsonschema_python_type"] = list
+
+    class JsonSchemaTypeField(fields.Field):
+        def _jsonschema_type_mapping(self):
+            return {"generate_missing_schema_keys": list}
+
+    # Custom fields which we want to treat like lists: Inner attribute defined
+    class CustomListFieldWithInner(fields.Field):
+        def __init__(self, inner_field: fields.Field, **kwargs):
+            super().__init__(**kwargs)
+            self.metadata["jsonschema_python_type"] = list
+            self.inner = inner_field
+
+    class JsonSchemaTypeFieldWithInner(fields.Field):
+        def __init__(self, inner_field: fields.Field, **kwargs):
+            super().__init__(**kwargs)
+            self.inner = inner_field
+
+        def _jsonschema_type_mapping(self):
+            return {"generate_missing_schema_keys": list}
+
+    class UserSchema(Schema):
+        custom_field = CustomListField()
+        jsonschema_field = JsonSchemaTypeField()
+        custom_field_inner = CustomListFieldWithInner(inner_field=fields.String())
+        jsonschema_field_inner = JsonSchemaTypeFieldWithInner(inner_field=fields.String())
+
+    schema = UserSchema()
+    dumped = validate_and_dump(schema)
+    pytype_prop = dumped["definitions"]["UserSchema"]["properties"]["custom_field"]
+    jsonschema_prop = dumped["definitions"]["UserSchema"]["properties"]["jsonschema_field"]
+    pytype_inner_prop = dumped["definitions"]["UserSchema"]["properties"]["custom_field_inner"]
+    jsonschema_inner_prop = dumped["definitions"]["UserSchema"]["properties"]["jsonschema_field_inner"]
+    for nested_json in (pytype_prop, jsonschema_prop):
+        assert nested_json["type"] == "array"
+        assert "items" in nested_json
+        assert nested_json["items"] == {}
+    for nested_json in (pytype_inner_prop, jsonschema_inner_prop):
+        assert nested_json["type"] == "array"
+        assert "items" in nested_json
+        assert nested_json["items"] == {"title": "", "type": "string"}
+
+
+def test_custom_jsonschema_python_type_dict_additional_properties_exists():
+    """
+    When a custom fields.Field instance is used with jsonschema_python_type=dict or _jsonschema_type_mapping "object",
+    an empty "additionalProperties" schema should be present
+    """
+
+    # Custom fields which we want to treat like dicts: No value_field attribute defined
+    class CustomDictField(fields.Field):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.metadata["jsonschema_python_type"] = dict
+
+    class JsonSchemaTypeField(fields.Field):
+        def _jsonschema_type_mapping(self):
+            return {"generate_missing_schema_keys": dict}
+
+    # Custom fields which we want to treat like dicts: value_field attribute defined
+    class CustomDictFieldWithValueField(fields.Field):
+        def __init__(self, value_field: fields.Field, **kwargs):
+            super().__init__(**kwargs)
+            self.metadata["jsonschema_python_type"] = dict
+            self.value_field = value_field
+
+    class JsonSchemaTypeFieldWithValueField(fields.Field):
+        def __init__(self, value_field: fields.Field, **kwargs):
+            super().__init__(**kwargs)
+            self.value_field = value_field
+
+        def _jsonschema_type_mapping(self):
+            return {"generate_missing_schema_keys": dict}
+
+    class UserSchema(Schema):
+        custom_field = CustomDictField()
+        jsonschema_field = JsonSchemaTypeField()
+        custom_field_value = CustomDictFieldWithValueField(value_field=fields.String())
+        jsonschema_field_value = JsonSchemaTypeFieldWithValueField(value_field=fields.String())
+
+    schema = UserSchema()
+    dumped = validate_and_dump(schema)
+    pytype_prop = dumped["definitions"]["UserSchema"]["properties"]["custom_field"]
+    jsonschema_prop = dumped["definitions"]["UserSchema"]["properties"]["jsonschema_field"]
+    pytype_value_prop = dumped["definitions"]["UserSchema"]["properties"]["custom_field_value"]
+    jsonschema_value_prop = dumped["definitions"]["UserSchema"]["properties"]["jsonschema_field_value"]
+    for nested_json in (pytype_prop, jsonschema_prop):
+        assert nested_json["type"] == "object"
+        assert "additionalProperties" in nested_json
+        assert nested_json["additionalProperties"] == {}
+    for nested_json in (pytype_value_prop, jsonschema_value_prop):
+        assert nested_json["type"] == "object"
+        assert "additionalProperties" in nested_json
+        assert nested_json["additionalProperties"] == {"title": "", "type": "string"}
+
+
+def test_can_have_custom_field_schema_without_type():
+    class JsonSchemaEvilField(fields.Field):
+        def _jsonschema_type_mapping(self):
+            return {"evil_field": "true"}
+
+    class UserSchema(Schema):
+        custom_field = JsonSchemaEvilField()
+
+    schema = UserSchema()
+    dumped = validate_and_dump(schema)
+    assert dumped["definitions"]["UserSchema"]["properties"]["custom_field"] == {"evil_field": "true"}
+
+
+def test_jsonschema_type_mapping_must_be_a_dictionary():
+    class JsonSchemaBrokenField(fields.Field):
+        def _jsonschema_type_mapping(self):
+            return "list"
+
+    class UserSchema(Schema):
+        custom_field = JsonSchemaBrokenField()
+
+    schema = UserSchema()
+    with pytest.raises(UnsupportedValueError) as e:
+        validate_and_dump(schema)
+    assert str(e.value) == "_jsonschema_type_mapping should be a dictionary, received 'list' for field 'custom_field'"
+
+
+@pytest.mark.parametrize(
+    ("field_type", "msg"),
+    [
+        ("not_a_type", "A python type was not supplied for 'jsonschema_python_type'"),
+        (JSONSchema, "'JSONSchema' is not a supported python type for 'jsonschema_python_type'"),
+        (None, "Unsupported field type JsonSchemaBrokenField"),
+    ],
+)
+def test_field_pytype_errors(field_type, msg):
+    class JsonSchemaBrokenField(fields.Field):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.attribute = "mapped"
+            if field_type is not None:
+                self.metadata["jsonschema_python_type"] = field_type
+
+    field = JsonSchemaBrokenField()
+
+    with pytest.raises(UnsupportedValueError) as e:
+        JSONSchema._get_python_type(field)
+    assert str(e.value) == f"{msg}, in 'mapped'"

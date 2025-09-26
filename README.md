@@ -176,12 +176,56 @@ if __name__ == '__main__':
 ## Advanced usage
 ### Custom Type support
 
-Simply add a `_jsonschema_type_mapping` method to your field
-so we know how it ought to get serialized to JSON Schema.
+For custom field classes, you can add a mapping to an equivalent python type using the `'jsonschema_python_type'` key inside `metadata`. This allows the library to attempt to populate schema values as if it were an instance of a `Field` with equivalence to that python type.
+
+If requiring proper schema validation and nesting with custom list-like fields, consider subclassing `fields.List`, or alternatively provide a `self.inner` attribute, set to a field instance representing the type of the items inside the custom list.
+
+Example custom field definitions, using `'jsonschema_python_type'`:
+
+```python
+class Colour(fields.Field):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.metadata["jsonschema_python_type"] = str
+
+    def _serialize(self, value, _attr, _obj):
+        r, g, b = value
+        return f"#{r:x}{g:x}{b:x}"
+
+class ColourList(fields.Field):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.metadata["jsonschema_python_type"] = list
+        self.inner = Colour()
+
+class FlexibleType(fields.Field):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        print(f"This is field treated like a {self.metadata['jsonschema_python_type']}")
+
+class UserSchema(Schema):
+        favourite_colour = Colour()
+        close_favourites = ColourList()
+        bool_field = FlexibleType(metadata={"jsonschema_python_type": bool})
+        int_field = FlexibleType(metadata={"jsonschema_python_type": int})
+
+schema = UserSchema()
+json_schema = JSONSchema()
+json_schema.dump(schema)
+```
+
+As an alternative option, you can also supply an equivalent `Field` type here instead. For example `"{jsonschema_python_type": fields.String}`.
+
+
+### [__deprecated__] Custom Type support using `_jsonschema_type_mapping()`
+
+If desiring strict control over the output schema for a custom field, add a `_jsonschema_type_mapping` method to your field to supply your own field schema.
+Whatever is put here will be exactly what gets serialized to JSON Schema.
+
+> Note that no automated nesting logic or validation will be applied for a schema given this way.
 
 A common use case for this is creating a dropdown menu using
 enum (see Gender below).
-
 
 ```python
 class Colour(fields.Field):
@@ -191,12 +235,9 @@ class Colour(fields.Field):
             'type': 'string',
         }
 
-    def _serialize(self, value, attr, obj):
+    def _serialize(self, value, _attr, _obj):
         r, g, b = value
-        r = "%02X" % (r,)
-        g = "%02X" % (g,)
-        b = "%02X" % (b,)
-        return '#' + r + g + b
+        return f"#{r:x}{g:x}{b:x}"
 
 class Gender(fields.String):
     def _jsonschema_type_mapping(self):
@@ -215,7 +256,9 @@ schema = UserSchema()
 json_schema = JSONSchema()
 json_schema.dump(schema)
 ```
-
+An alternative use of the `_jsonschema_type_mapping()` method is unlocked by providing the `"generate_missing_schema_keys"` key, with an equivalent python type as the value.
+This allows the library to attempt to automatically generate the values for missing keys it can extract from the field, given the equivalent type.
+> `_jsonschema_type_mapping()` is deprecated in favour of using `'jsonschema_python_type'` for type aliases, as described above.
 
 ### React-JSONSchema-Form Extension
 

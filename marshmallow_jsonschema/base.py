@@ -1,9 +1,11 @@
+import builtins
 import datetime
 import decimal
-import typing
 import uuid
+import warnings
 from enum import Enum
 from inspect import isclass
+from typing import Any
 
 from marshmallow import EXCLUDE, INCLUDE, RAISE, Schema, fields, missing, validate
 
@@ -97,6 +99,7 @@ MARSHMALLOW_TO_PY_TYPES_PAIRS = [
     (fields.Dict, dict),
     (fields.Url, str),
     (fields.List, list),
+    (fields.Tuple, tuple),
     (fields.Number, decimal.Decimal),
     (fields.IP, str),
     (fields.IPInterface, str),
@@ -121,6 +124,9 @@ FIELD_VALIDATORS = {
     validate.Range: handle_range,
     validate.Regexp: handle_regexp,
 }
+
+# Metadata item to specify what python type to interpret custom field classes as
+PYTYPE_KEY = "jsonschema_python_type"
 
 
 def _resolve_additional_properties(cls) -> bool:
@@ -160,13 +166,13 @@ class JSONSchema(Schema):
                                    Note: For the marshmallow scheme, also need to enable
                                    ordering of fields too (via `class Meta`, attribute `ordered`).
         """
-        self._nested_schema_classes: dict[str, dict[str, typing.Any]] = {}
+        self._nested_schema_classes: dict[str, dict[str, Any]] = {}
         self.nested = kwargs.pop("nested", False)
         self.props_ordered = kwargs.pop("props_ordered", False)
         self.opts.ordered = self.props_ordered
         super().__init__(*args, **kwargs)
 
-    def get_properties(self, obj) -> dict[str, dict[str, typing.Any]]:
+    def get_properties(self, obj) -> dict[str, dict[str, Any]]:
         """Fill out properties field."""
         properties = self.dict_class()
 
@@ -193,7 +199,7 @@ class JSONSchema(Schema):
 
         return required or missing
 
-    def _from_python_type(self, obj, field, pytype) -> dict[str, typing.Any]:
+    def _from_python_type(self, obj, field, pytype: builtins.type) -> dict[str, Any]:
         """Get schema definition from python type."""
         json_schema = {"title": field.attribute or field.name or ""}
 
@@ -219,17 +225,33 @@ class JSONSchema(Schema):
         metadata.update(field.metadata)
 
         for md_key, md_val in metadata.items():
-            if md_key in ("metadata", "name"):
+            if md_key in ("metadata", "name", PYTYPE_KEY):
                 continue
             json_schema[md_key] = md_val
 
-        if isinstance(field, fields.List):
-            json_schema["items"] = self._get_schema_for_field(obj, field.inner)
+        if pytype in (list, set, tuple):
+            if isinstance(field, fields.List) or hasattr(field, "inner"):
+                json_schema["items"] = self._get_schema_for_field(obj, field.inner)
+            else:
+                msg = (
+                    f"Cannot determine inner field for {field.__class__} ({json_schema['title']}) 'array' field. "
+                    "'items' will be empty in the schema. Consider subclassing 'fields.List', or defining an "
+                    "appropriate 'self.inner' attribute for this custom field."
+                )
+                warnings.warn(msg, UserWarning, stacklevel=2)
+                json_schema["items"] = {}
 
-        if isinstance(field, fields.Dict):
-            json_schema["additionalProperties"] = (
-                self._get_schema_for_field(obj, field.value_field) if field.value_field else {}
-            )
+        if pytype is dict:
+            if hasattr(field, "value_field") and field.value_field is not None:
+                json_schema["additionalProperties"] = self._get_schema_for_field(obj, field.value_field)
+            else:
+                msg = (
+                    f"Cannot determine value field for custom '{json_schema['title']}' dict field, "
+                    "'additionalProperties' will be empty in the schema. Consider subclassing 'fields.Dict', or "
+                    "defining an appropriate 'self.value_field' attribute for this custom field."
+                )
+                warnings.warn(msg, UserWarning, stacklevel=2)
+                json_schema["additionalProperties"] = {}
         return json_schema
 
     def _get_marshmallow_enum_enum_values(self, field) -> list[str]:
@@ -263,10 +285,10 @@ class JSONSchema(Schema):
 
         return [value.name for value in field.enum]
 
-    def _from_union_schema(self, obj, field) -> dict[str, list[typing.Any]]:
+    def _from_union_schema(self, obj, field) -> dict[str, list[Any]]:
         """
-        Get a union type schema. Uses anyOf to allow the value to be any of the provided sub fields.
-        Currently there are two implementations of union fields, one in marshmallow_dataclass
+        Get a union type schema. Uses anyOf to allow the value to be any of the provided sub-fields.
+        Currently, there are two implementations of union fields, one in marshmallow_dataclass
         and one in marshmallow_union. To avoid excessive imports, this function just tries to access
         the relevant attribute instead of type checking for Union.
         """
@@ -287,21 +309,60 @@ class JSONSchema(Schema):
         msg = f"Field {field} is not a supported Union type."
         raise TypeError(msg)
 
-    def _get_python_type(self, field):
+    @staticmethod
+    def _get_python_type(field: fields.Field) -> builtins.type:
         """Get python type based on field subclass"""
-        for map_class, pytype in MARSHMALLOW_TO_PY_TYPES_PAIRS:
-            if issubclass(field.__class__, map_class):
+        class_lookup = field.__class__
+        if PYTYPE_KEY in field.metadata:
+            pytype = field.metadata[PYTYPE_KEY]
+            if not isinstance(pytype, type):
+                msg = f"A python type was not supplied for '{PYTYPE_KEY}'"
+            elif pytype not in PY_TO_JSON_TYPES_MAP:
+                class_lookup = pytype
+                msg = f"'{pytype.__name__}' is not a supported python type for '{PYTYPE_KEY}'"
+            else:
                 return pytype
+        for map_class, pytype in MARSHMALLOW_TO_PY_TYPES_PAIRS:
+            if issubclass(class_lookup, map_class):
+                return pytype
+        if PYTYPE_KEY not in field.metadata:
+            msg = f"Unsupported field type {field.__class__.__name__}"
 
-        msg = f"unsupported field type {field!s}"
+        msg = f"{msg}, in '{field.attribute or field.name or field.__class__.__name__}'"
         raise UnsupportedValueError(msg)
+
+    @staticmethod
+    def _get_value_from_obj_or_metadata(field: fields.Field, attr: str) -> Any:
+        """
+        Helper function to search for and return an attribute. First checks for a direct attribute, then checks in
+        metadata. If the attribute value is a function, run and return the function output.
+        Returns None if the attribute is not found in either location.
+        """
+
+        def value():
+            return None
+
+        if hasattr(field, attr):
+            value = getattr(field, attr)
+        if attr in field.metadata:
+            value = field.metadata[attr]
+        return value() if callable(value) else value
 
     def _get_schema_for_field(self, obj, field):
         """Get schema and validators for field."""
-        if hasattr(field, "_jsonschema_type_mapping"):
-            schema = field._jsonschema_type_mapping()
-        elif "_jsonschema_type_mapping" in field.metadata:
-            schema = field.metadata["_jsonschema_type_mapping"]
+        # For backwards compatibility, can still use '_jsonschema_type_mapping' with JSON equivalent Field type.
+        # Will just use the 'jsonschema_python_type' metadata mapping if present
+        supplied_field_schema = self._get_value_from_obj_or_metadata(field, "_jsonschema_type_mapping")
+        if supplied_field_schema is not None and PYTYPE_KEY not in field.metadata:
+            if not isinstance(supplied_field_schema, dict):
+                msg = (
+                    f"_jsonschema_type_mapping should be a dictionary, received '{supplied_field_schema!s}' for"
+                    f" field '{field.name or field.__class__.__name__}'"
+                )
+                raise UnsupportedValueError(msg)
+            pytype = supplied_field_schema.pop("generate_missing_schema_keys", False)
+            schema = self._from_python_type(obj, field, pytype) if pytype and isinstance(pytype, builtins.type) else {}
+            schema.update(supplied_field_schema)
         elif isinstance(field, fields.Nested):
             # Special treatment for nested fields.
             schema = self._from_nested_schema(obj, field)
@@ -385,7 +446,7 @@ class JSONSchema(Schema):
         return super().dump(obj, **kwargs)
 
     @post_dump
-    def wrap(self, data, **_) -> dict[str, typing.Any]:
+    def wrap(self, data, **_) -> dict[str, Any]:
         """Wrap this with the root schema definitions."""
         if self.nested:  # no need to wrap, will be in outer defs
             return data
