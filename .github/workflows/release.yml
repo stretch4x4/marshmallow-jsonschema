@@ -66,8 +66,12 @@ jobs:
     - name: Finalise release notes
       id: release_notes
       run: |
+        # Extract the release version number
         release_version=`uvx bump-my-version@${{ env.BUMPVERSION_VERSION }} show-bump --ascii | grep release | grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" 2>/dev/null`
+        # Generate the new release notes (this command also stages the associated changes)
         uvx towncrier@${{ env.TOWNCRIER_VERSION }} build --yes --version ${release_version}
+        # Extract just the subset of new release notes
+        git diff --cached -U0 ReleaseNotes.rst | grep '^\+' | grep -Ev '^(--- a/|\+\+\+ b/)' | sed 's/\+//g' > notes_subset.rst
         echo "release_tag=v${release_version}" >> $GITHUB_OUTPUT
     - name: Bump to the release version
       # e.g. 1.2.3
@@ -78,6 +82,11 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         branch: ${{ github.ref }}
         tags: true
+    - name: Store the release notes subset
+      uses: actions/upload-artifact@v4
+      with:
+        name: notes_subset
+        path: notes_subset.rst
 
   # This is a no-op job that simply displays the release version tag at a glance in the UI.
   # Unfortunately GHA doesn't yet support updating the run name based on job outputs
@@ -126,10 +135,14 @@ jobs:
       with:
         name: python-package-distributions
         path: dist/
+    - name: Download release notes subset
+      uses: actions/download-artifact@v4
+      with:
+        name: notes_subset
     - name: Create GitHub Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release create ${{needs.bump_version_and_notes.outputs.release_tag}} --title ${{needs.bump_version_and_notes.outputs.release_tag}} -F ReleaseNotes.rst dist/*
+      run: gh release create ${{needs.bump_version_and_notes.outputs.release_tag}} --title ${{needs.bump_version_and_notes.outputs.release_tag}} -F notes_subset.rst dist/*
 
   publish-to-pypi:
     # Temporarily disabling this job until we take ownership of the project on PyPI or rename this fork
