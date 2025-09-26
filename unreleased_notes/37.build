@@ -1,0 +1,1 @@
+Added support for bump-my-version and towncrier to the release pipeline to enable a fully automated deployment.

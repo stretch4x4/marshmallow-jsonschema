@@ -1,8 +1,3 @@
-For newer versions of the package >= 0.15.0, please refer to the GitHub Releases for the changelogs:
-https://github.com/stretch4x4/marshmallow-jsonschema/releases
-
-For older versions of the package < 0.15.0, please see below:
-
 0.14.0 (2025-09-18)
     - First release of the new fork at stretch4x4/marshmallow-jsonschema #9
     - Restricted marshmallow support to 3.x series, due to test failures #2
