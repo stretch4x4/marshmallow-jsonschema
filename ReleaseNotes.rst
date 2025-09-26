@@ -1,3 +1,43 @@
+v0.16.0 - 2025-09-26
+====================
+
+Features
+--------
+
+- Add Support for marshmallow.fields.Enum in marshmallow ≥ v3.18 (`10 <https://github.com/stretch4x4/marshmallow-jsonschema/issues/10>`_)
+- Add support for marshmallow_dataclass union fields by @caldbarksy (`14 <https://github.com/stretch4x4/marshmallow-jsonschema/issues/14>`_)
+
+
+Bugfixes
+--------
+
+- Fix oneOf validation handling by @jgroth (`15 <https://github.com/stretch4x4/marshmallow-jsonschema/issues/15>`_)
+- Add ContainsOnly validation support via anyOf by @jgroth (`17 <https://github.com/stretch4x4/marshmallow-jsonschema/issues/17>`_)
+
+
+Improved Documentation
+----------------------
+
+- Adopted [towncrier](https://github.com/twisted/towncrier) for managing release notes.
+
+  See [CONTRIBUTING.md](./CONTRIBUTING.md) for more details. by @kyluca (`37 <https://github.com/stretch4x4/marshmallow-jsonschema/issues/37>`_)
+
+
+Build and Packaging
+-------------------
+
+- Added support for bump-my-version and towncrier to the release pipeline to enable a fully automated deployment. by @kyluca (`37 <https://github.com/stretch4x4/marshmallow-jsonschema/issues/37>`_)
+- Use new ruff-check hook by @stretch4x4 (`43 <https://github.com/stretch4x4/marshmallow-jsonschema/issues/43>`_)
+
+
+New Contributors
+----------------
+
+- * @winddon made their first contribution in https://github.com/stretch4x4/marshmallow-jsonschema/pull/21
+  * @caldbarksy made their first contribution in https://github.com/stretch4x4/marshmallow-jsonschema/pull/20
+  * @stockycode made their first contribution in https://github.com/stretch4x4/marshmallow-jsonschema/pull/25 (`new_contributors <https://github.com/stretch4x4/marshmallow-jsonschema/issues/new_contributors>`_)
+
+
 0.15.0 (2025-09-22)
     - Rename to have unique workflow names by @kyluca in #26
     - run python 3.12 in the build, formatting tweaks - replace #13 by @stretch4x4 in #23
