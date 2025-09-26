@@ -161,10 +161,6 @@ serialize = [
     "{major}.{minor}.{patch}.{release}{dev}",
     "{major}.{minor}.{patch}",
 ]
-pre_commit_hooks = [
-    "uv lock",
-    "git add uv.lock",
-] # this is a bump-my-version invocation unrelated to the pre-commit tool
 
 [tool.bumpversion.parts.release]
 optional_value = "release"
