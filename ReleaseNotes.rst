@@ -1,3 +1,12 @@
+0.15.0 (2025-09-22)
+    - Rename to have unique workflow names by @kyluca in #26
+    - run python 3.12 in the build, formatting tweaks - replace #13 by @stretch4x4 in #23
+    - Potential fix for code scanning alert no. 1: Flask app is run in debug mode by @stretch4x4 in #30
+    - Upgrade builds and actions to uv by @stretch4x4 in #32
+    - Add pre-commit hooks by @stretch4x4 in #35
+    - Update build badges by @stretch4x4 in #34
+    - Add basic release workflow by @kyluca in #29
+    - Converting linting and code formatting to ruff by @stretch4x4 in #36
 0.14.0 (2025-09-18)
     - First release of the new fork at stretch4x4/marshmallow-jsonschema #9
     - Restricted marshmallow support to 3.x series, due to test failures #2
