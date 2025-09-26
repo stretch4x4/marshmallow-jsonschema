@@ -217,7 +217,7 @@ json_schema.dump(schema)
 As an alternative option, you can also supply an equivalent `Field` type here instead. For example `"{jsonschema_python_type": fields.String}`.
 
 
-### Custom Type support using `_jsonschema_type_mapping()`
+### [__deprecated__] Custom Type support using `_jsonschema_type_mapping()`
 
 If desiring strict control over the output schema for a custom field, add a `_jsonschema_type_mapping` method to your field to supply your own field schema.
 Whatever is put here will be exactly what gets serialized to JSON Schema.
@@ -256,7 +256,7 @@ schema = UserSchema()
 json_schema = JSONSchema()
 json_schema.dump(schema)
 ```
-[__deprecated__] An alternative use of the `_jsonschema_type_mapping()` method is unlocked by providing the `"generate_missing_schema_keys"` key, with an equivalent python type as the value.
+An alternative use of the `_jsonschema_type_mapping()` method is unlocked by providing the `"generate_missing_schema_keys"` key, with an equivalent python type as the value.
 This allows the library to attempt to automatically generate the values for missing keys it can extract from the field, given the equivalent type.
 > `_jsonschema_type_mapping()` is deprecated in favour of using `'jsonschema_python_type'` for type aliases, as described above.
 
