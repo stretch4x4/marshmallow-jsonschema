@@ -39,6 +39,7 @@ classifiers = [
 ]
 dependencies = [
     "marshmallow~=3.11",
+    "mkdocs>=1.6.1",
 ]
 
 [project.optional-dependencies]
