@@ -1,1 +1,3 @@
 site_name: marshmallow-jsonschema
+theme:
+  name: readthedocs
