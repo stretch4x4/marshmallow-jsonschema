@@ -79,6 +79,14 @@ jobs:
         branch: ${{ github.ref }}
         tags: true
 
+  # This is a no-op job that simply displays the release version tag at a glance in the UI.
+  # Unfortunately GHA doesn't yet support updating the run name based on job outputs
+  display_version:
+    name: ${{needs.bump_version_and_notes.outputs.release_tag}}
+    needs:
+    - bump_version_and_notes
+    runs-on: ubuntu-latest
+
   build:
     name: Build distribution 📦
     needs:
