@@ -18,6 +18,7 @@ The valid filename extensions are currently:
 * .refactor
 * .doc
 * .build
+* .contrib
 
 See the [towncrier docs](https://towncrier.readthedocs.io/en/stable/index.html) for more details.
 
@@ -53,11 +54,3 @@ Running tests
 To run all tests: ::
 
     $ pytest
-
-To run syntax checks: ::
-
-    $ tox -e lint
-
-(Optional) To run tests in all supported Python versions in their own virtual environments (must have each interpreter installed): ::
-
-    $ tox

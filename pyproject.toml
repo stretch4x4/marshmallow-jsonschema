@@ -155,6 +155,11 @@ directory = "build"
 name = "Build and Packaging"
 showcontent = true
 
+[[tool.towncrier.type]]
+directory = "contrib"
+name = "New Contributors"
+showcontent = true
+
 [tool.bumpversion]
 current_version = "0.15.1.dev0"
 commit = false
