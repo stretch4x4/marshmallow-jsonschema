@@ -39,7 +39,6 @@ classifiers = [
 ]
 dependencies = [
     "marshmallow~=3.11",
-    "mkdocs>=1.6.1",
 ]
 
 [project.optional-dependencies]
@@ -68,6 +67,9 @@ dev = [
     "pytest~=8.4",
     "pytest-cov~=7.0",
     "ruff==0.13.1", # hard pinned to match the pre-commit-config
+]
+docs = [
+    "mkdocs~=1.6",
 ]
 
 [tool.ruff]
