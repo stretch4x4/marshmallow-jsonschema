@@ -641,14 +641,58 @@ def test_sorting_properties():
     assert list(keys) == ["d", "c", "a"]
 
 
-def test_marshmallow_enum_enum_based():
-    class TestEnum(Enum):
-        value_1 = 0
-        value_2 = 1
-        value_3 = 2
+class TestEnum(Enum):
+    value_1 = "0"
+    value_2 = "1"
+    value_3 = "2"
+
+
+@pytest.mark.parametrize(
+    ("field_type", "validation", "matches", "unsupported"),
+    [
+        ("string", None, "enum", False),
+        ("string", validate.OneOf(list(TestEnum)), "oneOf", False),
+        (
+            "string",
+            validate.ContainsOnly(list(TestEnum)),
+            "anyOf",
+            True,
+        ),  # anyOf not supported for string fields, remains an enum
+        ("array", None, "enum", False),
+        (
+            "array",
+            validate.OneOf(list(TestEnum)),
+            "oneOf",
+            True,
+        ),  # oneOf not supported for list fields, remains an enum
+    ],
+)
+@pytest.mark.parametrize(
+    "enum_cls",
+    [
+        pytest.param(MarshmallowEnumEnumField, id="Lib Enum (deprecated)"),
+        pytest.param(
+            MarshmallowNativeEnumField,
+            id="Native Enum",
+            marks=pytest.mark.skipif(
+                not TEST_MARSHMALLOW_NATIVE_ENUM, reason="marshmallow < 3.18 doesn't support native enums"
+            ),
+        ),
+    ],
+)
+def test_marshmallow_enums(enum_cls, field_type, validation, matches, unsupported):
+    """
+    Testing the two types of enums we support although the lib version is deprecated.
+    Also checking compatability with oneOf validation as it causes invalid schemas if both are set
+
+    The following test case is skipped
+    # ("array", validate.ContainsOnly(choices=list(TestEnum)), "anyOf", False),
+    # containsOnly validation on an array, is not compatible with the serialization of an enum field
+    #  requires a list field instead
+    """
 
     class TestSchema(Schema):
-        enum_prop = MarshmallowEnumEnumField(TestEnum)
+        enum_prop = enum_cls(TestEnum, validate=validation, type=field_type)
 
     # Should be sorting of fields
     schema = TestSchema()
@@ -656,32 +700,24 @@ def test_marshmallow_enum_enum_based():
     json_schema = JSONSchema()
     data = json_schema.dump(schema)
 
-    assert data["definitions"]["TestSchema"]["properties"]["enum_prop"]["type"] == "string"
-    received_enum_values = sorted(data["definitions"]["TestSchema"]["properties"]["enum_prop"]["enum"])
-    assert received_enum_values == ["value_1", "value_2", "value_3"]
+    field = data["definitions"]["TestSchema"]["properties"]["enum_prop"]
+    if unsupported:
+        # Some validations are not compatible so it's not applied and the enum remains
+        matches = "enum"
 
-
-def test_native_marshmallow_enum_based():
-    if not TEST_MARSHMALLOW_NATIVE_ENUM:
-        return
-
-    class TestEnum(Enum):
-        value_1 = 0
-        value_2 = 1
-        value_3 = 2
-
-    class TestSchema(Schema):
-        enum_prop = MarshmallowNativeEnumField(TestEnum)
-
-    # Should be sorting of fields
-    schema = TestSchema()
-
-    json_schema = JSONSchema()
-    data = json_schema.dump(schema)
-
-    assert data["definitions"]["TestSchema"]["properties"]["enum_prop"]["type"] == "string"
-    received_enum_values = sorted(data["definitions"]["TestSchema"]["properties"]["enum_prop"]["enum"])
-    assert received_enum_values == ["value_1", "value_2", "value_3"]
+    assert field["type"] == field_type
+    potential_options = {"enum", "anyOf", "oneOf"}
+    assert matches in field
+    for missing in potential_options - {matches}:
+        assert missing not in field
+    if matches == "enum":
+        assert field[matches] == ["value_1", "value_2", "value_3"]
+    else:
+        assert field[matches] == [
+            {"const": "value_1", "title": "value_1", "type": "string"},
+            {"const": "value_2", "title": "value_2", "type": "string"},
+            {"const": "value_3", "title": "value_3", "type": "string"},
+        ]
 
 
 def test_marshmallow_enum_enum_based_load_dump_value():
