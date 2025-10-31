@@ -1,3 +1,12 @@
+v0.16.1 - 2025-10-31
+====================
+
+Bugfixes
+--------
+
+- Fix bug with enum / oneOf validation leading to invalid schemas (`46 <https://github.com/stretch4x4/marshmallow-jsonschema/issues/46>`_)
+
+
 v0.16.0 - 2025-09-26
 ====================
 
