@@ -85,6 +85,8 @@ def handle_one_of(schema, field, validator, _parent_schema):
         for choice, label in zip(choices, labels, strict=False)
     ]
 
+    schema.pop("enum", None)  # enum and oneOf conflict, so remove enum
+
     return schema
 
 
